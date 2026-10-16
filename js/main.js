@@ -36,8 +36,8 @@
       name: "The Puma Express",
       primary: saved ? "resume" : "new",
       items: [
-        saved && { act: "resume", label: "Resume game", key: "R", meta: `${PX.hhmm(saved.S.t)}, ${L.nodes[L.edges[saved.S.tr.e].a].name.replace("Velmont junction", "Velmont")}` },
-        { act: "new", label: "New game", key: "N", meta: d.name },
+        saved && { act: "resume", label: "Resume game", key: "R", meta: L.nodes[L.edges[saved.S.tr.e].a].name.replace("Velmont junction", "Velmont"), time: PX.hhmm(saved.S.t) },
+        { act: "new", label: "New game", key: "N", meta: d.name, time: PX.hhmm(d.start) },
         { act: "practice", label: "Practice a fight", key: "P", meta: "station, air, bridge" },
         { act: "scores", label: "High scores", key: "O", meta: best ? best.score.toLocaleString("en-US") : "" },
         "gap",
@@ -51,14 +51,18 @@
     const items = cfg.items.filter(Boolean), gap = items.indexOf("gap");
     const main = items.slice(0, gap), util = items.slice(gap + 1);
     let i = 0;
+    /* a timetable's line: the key, the service, dots to what it is and when it leaves */
     const btn = (it, big) => `<button data-act="${it.act}" class="pr${it.act === cfg.primary ? " dflt" : ""}" style="--i:${i++}"><kbd>${esc(it.key)}</kbd><span class="lbl">${esc(it.label)}</span>` +
-      (big && it.meta ? `<span class="meta">${esc(it.meta)}</span>` : "") + "</button>";
+      (big ? `<span class="dots" aria-hidden="true"></span><span class="meta">${esc(it.meta || "")}</span><span class="tm">${esc(it.time || "")}</span>` : "") + "</button>";
     return `<div class="pe-title">
       <canvas class="pe-scene" aria-hidden="true"></canvas><div class="pe-shade" aria-hidden="true"></div>
       <main>
-        <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="the">The</span><span><span class="puma">Puma</span> Express</span></h1>
-        <p class="pe-sub"><span>Velmont to Port Clair ·</span> <span>one night ·</span> <span>forty-eight paintings</span></p>
-        <nav class="pe-menu" aria-label="Main menu">${main.map(it => btn(it, true)).join("")}<div class="util">${util.map(it => btn(it, false)).join("")}</div></nav>
+        <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="plate" aria-hidden="true"><span class="the">The</span><span class="nm">Puma Express</span></span></h1>
+        <nav class="pe-menu" aria-label="Main menu">
+          <header class="tt-head" aria-hidden="true"><p class="tt-co"><s>Wolf Empire Railways</s></p><p class="tt-svc">Night service · Velmont to Port Clair</p><p class="tt-no">One train · forty-eight paintings</p><span class="tt-stamp">Requisitioned</span></header>
+          ${main.map(it => btn(it, true)).join("")}<div class="util">${util.map(it => btn(it, false)).join("")}</div>
+          <p class="tt-foot" aria-hidden="true">By order of the Resistance. Runs before dawn only.</p>
+        </nav>
       </main>
       <footer class="pe-foot"><span class="gk-credit">${UI.CREDIT}</span></footer>
     </div>`;
