@@ -14,16 +14,145 @@
   const K = PX.K, M = K.M, C = PX.C, L = PX.Line, MA = PX.MapArt = {};
   const INK = "#0b0d12", PAPER = "#121c2c", PAPER2 = "#16233a", LINE = "#d9d2bf", OURS = "#e2ad6a", THEIRS = "#e8573a", WATER = "#3d6f96";
 
-  /* the rectangle the map takes: left of the side panel, its own shape kept */
-  MA.frame = (W, H) => {
-    const right = Math.max(W * 0.62, W - 230), avail = right - 16, k = Math.min(avail / L.W, (H - 24) / L.H);
+  /* the rectangle the map takes: left of the side panel, its own shape kept. The panel is the page's,
+   * 230 CSS pixels wide and 14 in from the edge; s is how many CSS pixels a canvas pixel is (main.js) */
+  MA.frame = (W, H, s = K.SCALE || 1) => {
+    const right = W - Math.ceil(252 / s), avail = right - 16, k = Math.min(avail / L.W, (H - 24) / L.H);
     const w = L.W * k, h = L.H * k;
     return { x: Math.round(8 + (avail - w) / 2), y: Math.round((H - h) / 2), w, h, k };
   };
   const X = (f, x) => f.x + x * f.k, Y = (f, y) => f.y + y * f.k;
 
+  /* ---- where the names go ----
+   * The map is small and the face is not: a name set to the right of every
+   * station runs into the next one along the middle of the line, and past the
+   * map at Velmont. So each name has a few dozen places it may sit about its mark,
+   * best first, and the map takes the first set of them in which no name
+   * touches another, a mark, a bridge or the map's edge. Worked out once a
+   * size, and kept. If a map is too small to hold them all (a tall, narrow
+   * window), the least of them, the rivers' and the countries' first, are
+   * left off rather than drawn over one another. */
+  const hit = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const H5 = n => 7 + (n - 1) * 9;
+  /* the glyphs and their shadow, with a pixel clear all round; and the room one name keeps from another, so that two
+   * side by side are not read as one name (a word space and more) nor two stacked as one name of two lines */
+  const boxAt = (x, y, w, h) => ({ x: x - 1, y: y - 1, w: w + 3, h: h + 3 });
+  const roomAt = (x, y, w, h) => ({ x: x - 3, y: y - 2, w: w + 7, h: h + 5 });
+  /* the places about a mark rx by ry: right, above, below, left; then above and below slid aside, a few pixels at a time;
+   * then right and left raised or lowered; then above and below again, standing a little further off */
+  const around = (x, y, rx, ry, w, h) => {
+    const up = y - ry - h - 3, dn = y + ry + 3, mid = y - (h >> 1), r = x + rx + 3, l = x - rx - 3 - w, c = x - w / 2, out = [[r, mid], [c, up], [c, dn], [l, mid]];
+    const slide = (u, v) => { for (let d = 3; d <= w / 2 - 2; d += 3) out.push([c + d, u], [c - d, u], [c + d, v], [c - d, v]); };
+    slide(up, dn);
+    out.push([r, y - h - 1], [r, y + 1], [l, y - h - 1], [l, y + 1], [c, up - 3], [c, dn + 3]);
+    slide(up - 3, dn + 3);
+    return out.map(([a, b]) => [Math.round(a), Math.round(b)]);
+  };
+  /* a set of names in which none touches another: the most hemmed-in first, each at its best place still free */
+  function solve(labels, cap) {
+    const n = labels.length, pick = new Array(n).fill(-1), fails = new Array(n).fill(0);
+    let steps = 0;
+    const free = (i, c) => { const b = labels[i].c[c].room; for (let j = 0; j < n; j++) if (pick[j] >= 0 && hit(b, labels[j].c[pick[j]].room)) return false; return true; };
+    const go = left => {
+      if (!left) return true;
+      if (++steps > cap) return false;
+      let best = -1, opts = null;
+      for (let i = 0; i < n; i++) {
+        if (pick[i] >= 0) continue;
+        const o = []; for (let c = 0; c < labels[i].c.length; c++) if (free(i, c)) o.push(c);
+        if (!o.length) { fails[i]++; return false; }
+        if (!opts || o.length < opts.length) { best = i; opts = o; }
+      }
+      for (const c of opts) { pick[best] = c; if (go(left - 1)) return true; if (steps > cap) break; }
+      pick[best] = -1;
+      return false;
+    };
+    return { ok: go(n), pick, fails };
+  }
+  /* boats: the bridges the wolves' gunboats watch tonight, as a list of edges (a boat's mark under its bridge is kept clear) */
+  MA.layout = (W, H, s = K.SCALE || 1, boats = []) => K.get(`maplabels:${W}x${H}@${s}:${boats.join(",")}`, () => {
+    const f = MA.frame(W, H, s), inner = { x: f.x + 1, y: f.y + 1, w: f.w - 2, h: f.h - 2 };
+    const inside = b => b.x >= inner.x && b.y >= inner.y && b.x + b.w <= inner.x + inner.w && b.y + b.h <= inner.y + inner.h;
+    /* what a name may not cover: the stations, the junctions, the quarry's buffer, the bridges and the boat that may lie under one */
+    const marks = [], mark = (x, y, rx, ry) => marks.push({ x: Math.round(x) - rx, y: Math.round(y) - ry, w: rx * 2 + 1, h: ry * 2 + 1 });
+    for (const N of L.nodes) {
+      const x = X(f, N.x), y = Y(f, N.y);
+      if (N.kind === "st") mark(x, y, N.final ? 7 : 5, N.final ? 7 : 5);
+      else if (N.kind === "end") mark(x, y, 4, 1);
+      else if (L.isJunction(N.i)) mark(x, y, 4, 4);
+    }
+    const bridges = L.BRIDGES.map(e => { const E0 = L.edges[e], A = L.nodes[E0.a], B = L.nodes[E0.b], t = E0.bridge.at / E0.len; return [X(f, A.x + (B.x - A.x) * t), Y(f, A.y + (B.y - A.y) * t)]; });
+    bridges.forEach(([x, y], i) => { mark(x, y, 4, 2); if (boats.includes(L.BRIDGES[i])) marks.push({ x: Math.round(x) - 6, y: Math.round(y) + 5, w: 13, h: 8 }); });
+    /* the track, which a name may cross but had rather not */
+    const track = [];
+    for (const e of L.edges) { const A = L.nodes[e.a], B = L.nodes[e.b], x0 = X(f, A.x), y0 = Y(f, A.y), x1 = X(f, B.x), y1 = Y(f, B.y), len = Math.hypot(x1 - x0, y1 - y0); for (let t = 0; t < len; t += 2) track.push([x0 + (x1 - x0) * t / len, y0 + (y1 - y0) * t / len]); }
+    const crossing = b => { let k = 0; for (const [x, y] of track) if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) k++; return k; };
+    const clear = b => inside(b) && !marks.some(m => hit(b, m));
+    /* a label: its key, its tier (the higher, the later it is left off), and its wordings, each with
+     * its places in order of liking; a name of two words may break over two lines where one will not go */
+    const labels = [];
+    const label = (key, tier, ways, extra = () => 0) => {
+      const c = [];
+      ways.forEach(([lines, places], k) => {
+        const w = Math.max(...lines.map(s => K.text5w(s))), h = H5(lines.length);
+        places(w, h).forEach(([x, y], i) => { const b = boxAt(x, y, w, h); if (clear(b)) c.push({ x, y, b, room: roomAt(x, y, w, h), lines, w, h, cost: k * 40 + i + crossing(b) * 0.4 + extra(x, y, w, h) }); });
+      });
+      c.sort((a, b) => a.cost - b.cost);
+      labels.push({ key, tier, c });
+    };
+    const broken = s => { const m = s.match(/^(.+?[ -])(.+)$/); return m ? [m[1].trim(), m[2]] : null; };
+    for (const N of L.nodes) {
+      const x = X(f, N.x), y = Y(f, N.y);
+      if (N.kind === "st") {
+        const r = N.final ? 7 : 5, nm = N.name.toUpperCase(), two = broken(nm), at = (w, h) => around(x, y, r, r, w, h);
+        label(N.i, N.final || N.start ? 4 : 3, two ? [[[nm], at], [two, at]] : [[[nm], at]]);
+      } else if (N.kind === "end") label("quarry", 2, [[["QUARRY"], (w, h) => around(x, y, 4, 1, w, h)]]);
+      else if (N.kind === "wolf") label("wolf", 2, [
+        [["TO THE WOLF FRONTIER"], w => [[x - w / 2, y - 12], [x - w + 10, y - 12], [x - w - 4, y - 3], [x - w / 2, y - 22], [x - w + 10, y - 22], [x + 4, y - 12]].map(([a, b]) => [Math.round(a), Math.round(b)])],
+        [["TO THE WOLF", "FRONTIER"], (w, h) => around(x, y, 2, 2, w, h)],
+      ]);
+    }
+    /* the rivers' names, somewhere along them, as near the old place as is free */
+    for (const r of L.RIVERS) {
+      const nm = r.name.replace("the ", "").toUpperCase(), [ax, ay] = [X(f, r.pts[2][0]), Y(f, r.pts[2][1])], at = [];
+      for (let i = 0; i < r.pts.length - 1; i++) { const [x0, y0] = r.pts[i], [x1, y1] = r.pts[i + 1], len = Math.hypot(x1 - x0, y1 - y0) * f.k; for (let t = 0; t < len; t += 6) at.push([X(f, x0 + (x1 - x0) * t / len), Y(f, y0 + (y1 - y0) * t / len)]); }
+      at.sort((a, b) => Math.hypot(a[0] - ax, a[1] - ay) - Math.hypot(b[0] - ax, b[1] - ay));
+      label("river:" + r.name, 0, [[[nm], w => at.flatMap(([x, y]) => [[Math.round(x + 4), Math.round(y - 3)], [Math.round(x - 4 - w), Math.round(y - 3)]])]], (x, y) => Math.hypot(x - ax, y - ay) * 0.05);
+    }
+    /* the two countries, in the corners */
+    label("coast", 1, [[["THE FREE COAST"], () => [[f.x + 6, f.y + f.h - 12], [f.x + 6, f.y + 6]].map(([a, b]) => [Math.round(a), Math.round(b)])]]);
+    label("empire", 1, [[["WOLF EMPIRE"], w => [[f.x + f.w - w - 9, f.y + f.h - 12], [f.x + f.w - w - 9, f.y + 6]].map(([a, b]) => [Math.round(a), Math.round(b)])]]);
+    /* solve; and if it cannot be done, leave off the least label that kept failing, and again */
+    let live = labels.slice(), res;
+    const dropped = [];
+    for (;;) {
+      live = live.filter(l => l.c.length || (dropped.push(l.key), false));
+      res = solve(live, 4000);
+      if (res.ok) break;
+      /* the rivers', the countries', the quarry's and the frontier's go before any station's; of the stations, the one that failed most */
+      const order = live.map((l, i) => ({ l, i, fl: res.fails[i] })).sort((a, b) => Math.min(a.l.tier, 3) - Math.min(b.l.tier, 3) || a.l.tier - b.l.tier || b.fl - a.fl);
+      const out = order[0].l.tier < 3 ? order[0] : order.find(o => o.fl > 0) || order[0];
+      dropped.push(out.l.key); live.splice(out.i, 1);
+    }
+    const at = {};
+    live.forEach((l, i) => { const c = l.c[res.pick[i]]; at[l.key] = { x: c.x, y: c.y, w: c.w, h: c.h, lines: c.lines, b: c.b, room: c.room }; });
+    return { f, at, marks, dropped, taken: live.map(l => at[l.key].room), inner };
+  });
+  /* a label the night adds (a station's or a bridge's time to beat): the first of its places nothing else is in */
+  function placeExtra(lay, taken, w, h, places) {
+    const inside = b => b.x >= lay.inner.x && b.y >= lay.inner.y && b.x + b.w <= lay.inner.x + lay.inner.w && b.y + b.h <= lay.inner.y + lay.inner.h;
+    let best = null, bs = Infinity;
+    for (const [x, y] of places) {
+      const b = boxAt(x, y, w, h), room = roomAt(x, y, w, h);
+      const s = (inside(b) ? 0 : 100) + lay.marks.filter(m => hit(b, m)).length * 10 + taken.filter(t => hit(room, t)).length * 10;
+      if (s < bs) { bs = s; best = { x, y, room }; if (!s) break; }
+    }
+    taken.push(best.room);
+    return best;
+  }
+
   /* the paper and what never changes on it: the sea, the rivers, the hills */
-  const base = (W, H) => K.get(`mapbase:${W}x${H}`, () => {
+  const base = (W, H) => K.get(`mapbase:${W}x${H}@${K.SCALE || 1}`, () => {
     const c = K.mk(W, H), g = c.getContext("2d"), f = MA.frame(W, H);
     K.rect(g, 0, 0, W, H, "#0a101a");
     K.rect(g, f.x - 2, f.y - 2, f.w + 4, f.h + 4, "#2a3550");
@@ -57,10 +186,7 @@
     /* the rivers */
     for (const r of L.RIVERS) {
       for (let i = 0; i < r.pts.length - 1; i++) { const [x0, y0] = r.pts[i], [x1, y1] = r.pts[i + 1]; K.line(g, X(f, x0), Y(f, y0), X(f, x1), Y(f, y1), WATER, 2); }
-      const [nx, ny] = r.pts[2]; K.text5(g, r.name.replace("the ", "").toUpperCase(), X(f, nx) + 6, Y(f, ny) - 3, "#4f7fa6");
     }
-    K.text5(g, "THE FREE COAST", f.x + 6, f.y + f.h - 12, "#5a7fa0");
-    K.text5(g, "WOLF EMPIRE", f.x + f.w - 74, f.y + f.h - 12, "#8a3a2c");
     g.restore();
     /* the track, as a railway map draws it: a dark bed, a pale line, cross ticks for the sleepers */
     for (const e of L.edges) { const A = L.nodes[e.a], B = L.nodes[e.b]; K.line(g, X(f, A.x), Y(f, A.y), X(f, B.x), Y(f, B.y), INK, 5); }
@@ -132,22 +258,39 @@
       const E0 = L.edges[e], A = L.nodes[E0.a], B = L.nodes[E0.b], t = c.at / E0.len;
       cross(g, X(f, A.x + (B.x - A.x) * t), Y(f, A.y + (B.y - A.y) * t), THEIRS);
     }
-    /* the stations and their names */
+    /* the stations and their names, each where the layout put it; the rivers' and the countries' too */
+    const lay = MA.layout(W, H, K.SCALE || 1, L.BRIDGES.filter(e => S.br[e].guarded)), taken = lay.taken.slice(), TASK = "#7fd28a";
+    for (const r of L.RIVERS) { const a = lay.at["river:" + r.name]; if (a) K.text5(g, a.lines[0], a.x, a.y, "#4f7fa6"); }
+    if (lay.at.coast) K.text5(g, "THE FREE COAST", lay.at.coast.x, lay.at.coast.y, "#5a7fa0");
+    if (lay.at.empire) K.text5(g, "WOLF EMPIRE", lay.at.empire.x, lay.at.empire.y, "#8a3a2c");
     for (const N of L.nodes) {
       const x = X(f, N.x), y = Y(f, N.y);
       if (N.kind === "st") {
-        const held = S.st[N.i].held, task = S.tasks.find(k => !k.done && k.k === "station" && k.n === N.i);
+        const held = S.st[N.i].held;
         station(g, x, y, N.final ? "final" : held ? "held" : "ours", N.final ? "#f2ecd8" : held ? THEIRS : OURS);
-        const nm = N.name, tw = K.text5w(nm), lx = Math.round(N.y < 150 ? x - tw / 2 : x + 8), ly = Math.round(N.y < 150 ? y - 15 : y - 3);
-        K.text5(g, nm, lx, ly, held ? "#ff9a80" : N.final ? "#f2ecd8" : "#d9d2bf", INK);
-        if (task) K.text5(g, "TO " + PX.hhmm(task.until), lx, ly + 9, "#7fd28a", INK);
-      } else if (N.kind === "wolf") {
-        K.text5(g, "TO THE WOLF FRONTIER", Math.round(x - 60), Math.round(y - 12), "#c0503a", INK);
-      } else if (N.kind === "end") {
-        K.rect(g, x - 4, y - 1, 9, 3, THEIRS); K.text5(g, "QUARRY", Math.round(x + 8), Math.round(y - 3), "#9b9284", INK);
-      }
+      } else if (N.kind === "end") K.rect(g, x - 4, y - 1, 9, 3, THEIRS);
     }
-    for (const k of S.tasks) if (!k.done && k.k === "bridge") { const E0 = L.edges[k.e], A = L.nodes[E0.a], B = L.nodes[E0.b], t = E0.bridge.at / E0.len; K.text5(g, "TO " + PX.hhmm(k.until), Math.round(X(f, A.x + (B.x - A.x) * t) - 18), Math.round(Y(f, A.y + (B.y - A.y) * t) + 14), "#7fd28a", INK); }
+    for (const N of L.nodes) {
+      const a = lay.at[N.kind === "st" ? N.i : N.kind === "wolf" ? "wolf" : N.kind === "end" ? "quarry" : null];
+      if (!a) continue;
+      const col = N.kind === "wolf" ? "#c0503a" : N.kind === "end" ? "#9b9284" : S.st[N.i].held ? "#ff9a80" : N.final ? "#f2ecd8" : "#d9d2bf";
+      a.lines.forEach((s, i) => K.text5(g, s, a.x + Math.round((a.w - K.text5w(s)) / 2), a.y + i * 9, col, INK));
+    }
+    /* the times to beat: under the name if there is room, else wherever about it there is */
+    for (const k of S.tasks) {
+      if (k.done || (k.k !== "station" && k.k !== "bridge")) continue;
+      const s = "TO " + PX.hhmm(k.until), w = K.text5w(s);
+      let places;
+      if (k.k === "station") {
+        const N = L.nodes[k.n], a = lay.at[N.i], x = X(f, N.x), y = Y(f, N.y);
+        places = (a ? [[a.x, a.y + 9], [a.x, a.y - 9], [a.x + a.w - w, a.y + 9], [a.x + a.w - w, a.y - 9]] : []).concat(around(x, y, 5, 5, w, 7));
+      } else {
+        const E0 = L.edges[k.e], A = L.nodes[E0.a], B = L.nodes[E0.b], t = E0.bridge.at / E0.len;
+        places = around(X(f, A.x + (B.x - A.x) * t), Y(f, A.y + (B.y - A.y) * t) + 5, 6, 7, w, 7);
+      }
+      const p = placeExtra(lay, taken, w, 7, places);
+      K.text5(g, s, p.x, p.y, TASK, INK);
+    }
     /* the train: a white arrow the way she faces, in a tawny ring that breathes */
     const [tx, ty] = L.xy(S), E0 = L.edges[S.tr.e], A = L.nodes[E0.a], B = L.nodes[E0.b];
     const dx = (B.x - A.x) * S.tr.face, dy = (B.y - A.y) * S.tr.face, d = Math.hypot(dx, dy) || 1;

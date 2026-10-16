@@ -251,8 +251,9 @@
     for (const x of [-0.12, 0.12]) P.push({ k: "cyl", ax: "z", c: [x, 2.5], r: 0.07, l: [3.0, 4.6], m: "black" });
     return P;
   };
-  /* a Wolf Empire fighter: z forward, x the right wing, y up; 11 m across the wings */
-  Mo.fighter = () => {
+  /* a Wolf Empire fighter: z forward, x the right wing, y up; 11 m across the wings. t: the least its wings, tailplane
+   * and fin may be through, in metres, so a small trace that takes one ray in so many cannot step over them edge on */
+  Mo.fighter = (t = 0) => {
     const P = [];
     const skin = (p, n) => n[1] < -0.3 ? "under" : "plane";
     P.push(Cy("z", [0, 0], 0.3, [-4.6, -2.6], "plane", skin));
@@ -262,15 +263,18 @@
     P.push(Sp([0, 0, 3.05], 0.2, "red"));
     /* the propeller turning: a disc, mostly air */
     P.push(Cy("z", [0, 0], 1.45, [2.95, 3.0], "steel", p => (K.hash(Math.floor(p[0] * 9), Math.floor(p[1] * 9), 2) > 0.8 ? "steel" : null)));
-    /* the wings, tapering, red at the tips, the Empire's mark on them */
-    P.push(B([-5.5, -0.32, -0.75], [5.5, -0.18, 1.15], "plane", (p, n) => {
-      const ax = Math.abs(p[0]); if (p[2] > 1.15 - ax * 0.09 || p[2] < -0.75 + ax * 0.06) return null;
-      if (ax > 4.9) return "red";
+    /* the wings, tapering, red at the tips, the Empire's mark on them. The taper, the tailplane's and the fin's are
+     * stepped strips, each a whole box: cut out of one box, a ray along the wing meets its edge cut away and goes
+     * through, and a fighter seen head on or tail on loses its wings altogether */
+    const wing = (p, n) => {
+      const ax = Math.abs(p[0]); if (ax > 4.9) return "red";
       const rd = Math.hypot(ax - 3.5, p[2] - 0.15); if (rd < 0.48) return rd < 0.22 ? "chalk" : "red";
       return n[1] < 0 ? "under" : "plane";
-    }));
-    P.push(B([-1.9, 0.02, -4.6], [1.9, 0.1, -3.8], "plane", p => p[2] > -3.8 - Math.abs(p[0]) * 0.25 ? null : "plane"));
-    P.push(B([-0.06, 0, -4.7], [0.06, 1.45, -3.6], "plane", p => (p[2] > -3.6 - p[1] * 0.45 ? null : p[1] > 1.1 ? "red" : "plane")));
+    };
+    const wt = Math.max(0.07, t / 2), tt = Math.max(0.04, t / 2), ft = Math.max(0.06, t / 2);
+    for (let x = -5.5; x < 5.49; x += 0.5) { const ax = Math.abs(x + 0.25); P.push(B([x, -0.25 - wt, -0.75 + ax * 0.06], [x + 0.5, -0.25 + wt, 1.15 - ax * 0.09], "plane", wing)); }
+    for (let x = -1.9; x < 1.89; x += 0.38) P.push(B([x, 0.06 - tt, -4.6], [x + 0.38, 0.06 + tt, -3.8 - Math.abs(x + 0.19) * 0.25], "plane"));
+    for (let y = 0; y < 1.44; y += 0.29) P.push(B([-ft, y, -4.7], [ft, y + 0.29, -3.6 - (y + 0.145) * 0.45], y + 0.29 > 1.1 ? "red" : "plane"));
     P.push(Sp([0, 0.42, 0.1], 0.44, "glass", 0.4));
     for (const x of [-0.6, 0.6]) P.push(B([x - 0.04, -0.05, 1.7], [x + 0.04, 0.15, 2.3], "glowing"));
     return P;
