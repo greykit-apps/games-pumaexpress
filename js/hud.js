@@ -107,10 +107,10 @@
     if (showAhead && now - (HUD.aheadAt || 0) > 250) { HUD.aheadAt = now; ahead(S); }
     /* the cab's control, named */
     const ctl = scene === "cab" && S.phase === "run" ? PX.Input.sel() : null;
-    set(el.querySelector(".h-ctl"), "ctl", `${ctl}|${!!ui.aids.direct}`, (e) => {
+    set(el.querySelector(".h-ctl"), "ctl", ctl, (e) => {
       if (!ctl) { e.hidden = true; return; }
       e.hidden = false;
-      e.innerHTML = `<b>${esc(PX.Cab.NAMES[ctl])}</b> <span>${CTL[ctl]}</span>${ui.aids.direct ? ` <span class="dk">${DIRECT[ctl].split(" ").map(k => `<kbd>${k}</kbd>`).join("")}</span>` : ""}`;
+      e.innerHTML = `<b>${esc(PX.Cab.NAMES[ctl])}</b> <span>${CTL[ctl]}</span> <span class="dk">${DIRECT[ctl].split(" ").map(k => `<kbd>${k}</kbd>`).join("")}</span>`;
     });
     set(el.querySelector(".h-fast"), "fast", !!ui.fast, (e, v) => { e.hidden = !v; });
     const ms = el.querySelector(".h-mapside");

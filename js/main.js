@@ -284,15 +284,15 @@
   /* the first night's key strip: what to do, where you are */
   const SEP = ' <span class="sep"></span> ';
   function teachHint(S) {
-    const scene = R.sceneOf(S, game.ui), direct = game.ui.aids.direct;
-    if (scene === "station") return HUD.hint(`<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> aim${direct ? " (or the mouse)" : ""}${SEP}hold <kbd>Space</kbd> to fire${SEP}Duc moves only while you fire`);
+    const scene = R.sceneOf(S, game.ui);
+    if (scene === "station") return HUD.hint(`<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> aim (or the mouse)${SEP}hold <kbd>Space</kbd> to fire${SEP}Duc moves only while you fire`);
     if (scene === "bridge") return HUD.hint(`<kbd>←</kbd><kbd>→</kbd> bearing${SEP}<kbd>↑</kbd><kbd>↓</kbd> range${SEP}<kbd>Space</kbd> fire${SEP}correct from the splash`);
     if (scene === "front" || scene === "rear") return HUD.hint(`<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> aim${SEP}<kbd>Space</kbd> fire${SEP}<kbd>1</kbd> front <kbd>2</kbd> rear${SEP}<kbd>3</kbd> back to the cab`);
     if (scene === "map") return HUD.hint(null);
     if (!game.teach) return;
     const c = S.cab;
-    if (S.tr.v === 0 && c.brake > 0.1) return HUD.hint(direct ? `<kbd>Z</kbd> brake off${SEP}<kbd>W</kbd> open the throttle${SEP}or <kbd>←</kbd><kbd>→</kbd> pick a control, <kbd>↑</kbd><kbd>↓</kbd> work it` : `<kbd>←</kbd><kbd>→</kbd> pick a control${SEP}<kbd>↑</kbd><kbd>↓</kbd> work it: the brake off, the throttle open`);
-    if (S.tr.v < 6 && c.thr < 0.2) return HUD.hint(direct ? `<kbd>W</kbd> open the throttle` : `<kbd>→</kbd> to the throttle${SEP}<kbd>↑</kbd> open it`);
+    if (S.tr.v === 0 && c.brake > 0.1) return HUD.hint(`<kbd>Z</kbd> brake off${SEP}<kbd>W</kbd> open the throttle${SEP}or <kbd>←</kbd><kbd>→</kbd> pick a control, <kbd>↑</kbd><kbd>↓</kbd> work it`);
+    if (S.tr.v < 6 && c.thr < 0.2) return HUD.hint(`<kbd>W</kbd> open the throttle`);
     HUD.hint(`Keep the pressure up${game.ui.aids.fireman ? " (the fireman feeds her)" : ": door open, shovel, door shut"}${SEP}<kbd>4</kbd> the map${SEP}stop at a station of ours for coal and water`);
   }
 

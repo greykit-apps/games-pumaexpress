@@ -10,7 +10,6 @@
 
   /* ---- the aids: Classic is 1987, Field is a modern helping hand ---- */
   PX.AID_LIST = [
-    ["direct", "Mouse and keys on the controls", "Click or drag any control in the cab, aim with the mouse, and use a key for each control (W S throttle, Z X brake, Q E reverser, F door, G shovel, V valve, H whistle). Classic is the cursor alone, as the joystick was."],
     ["fireman", "A fireman aboard", "Someone else keeps the fire: shovels when the pressure drops, blows off before the red line. You drive."],
     ["lock", "Reverser lock", "The reverser will not move while she rolls, instead of the motion paying for it."],
     ["lookout", "Lookout", "Duc spots a cut in the line, a dead end or the frontier in good time and brakes for it, and slows her for points set against the straight."],
@@ -33,6 +32,8 @@
   /* learned: the first night's key strip has done its work; resume: a night left in the middle is kept */
   PX.prefs = Object.assign({ aids: "field", over: {}, speed: "classic", scanlines: false, shake: !CALM.matches, learned: false, resume: true }, PX.store.get(KEY_PREFS, {}));
   if (!PX.AIDS[PX.prefs.aids]) PX.prefs.aids = "field";
+  /* the mouse and the control keys were an aid once; they work in every mode now */
+  delete PX.prefs.over.direct;
   PX.savePrefs = () => PX.store.set(KEY_PREFS, PX.prefs);
   PX.aid = name => { const o = PX.prefs.over[name]; return o === undefined ? !!PX.AIDS[PX.prefs.aids][name] : !!o; };
   PX.setAids = set => { PX.prefs.aids = set; PX.prefs.over = {}; PX.savePrefs(); };
