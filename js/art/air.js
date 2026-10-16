@@ -178,10 +178,10 @@
   G.draw = (g, S, ui, now, dt) => {
     const W = g.canvas.width, H = g.canvas.height, view = S.view, cam = G.cam(W, H, view);
     G.last = cam;
-    const l = K.light(S.t);
-    World.sky(g, S, cam, now);
-    World.hills(g, S, cam);
-    World.ground(g, S, cam, now);
+    const l = K.light(S.t), wc = World.turned(S, cam, now);  /* the country swings through points; the guns and the fighters keep to cam */
+    World.sky(g, S, wc, now);
+    World.hills(g, S, wc);
+    World.ground(g, S, wc, now);
     FX.draw(g, "back");
     const raid = S.raid, ps = raid ? raid.planes.filter(p => p.st !== "gone" && p.delay <= 0).map(p => ({ p, q: proj(cam, view, p) })).filter(o => o.q).sort((a, b) => b.q.dist - a.q.dist) : [];
     G.onTarget = null;
