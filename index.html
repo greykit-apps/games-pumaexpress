@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>The Puma Express</title>
+<meta name="description" content="Wolves have loaded a train with stolen art. Take it back and run it to the coast before dawn: drive the engine by hand, fight for every station and bridge. A remake of The Train: Escape to Normandy, the 1987 Commodore 64 classic.">
+<meta name="theme-color" content="#05070f">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<meta property="og:title" content="The Puma Express">
+<meta property="og:description" content="Wolves have loaded a train with stolen art. Take it back and run it to the coast before dawn: drive the engine by hand, fight for every station and bridge. A remake of The Train: Escape to Normandy, the 1987 Commodore 64 classic.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://greykit.com/games/pumaexpress/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A puma's steam train running west through the night with a train of stolen art, its smoke streaming back under the moon.">
+<meta property="og:url" content="https://greykit.com/games/pumaexpress/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Puma Express">
+<meta name="twitter:description" content="Wolves have loaded a train with stolen art. Take it back and run it to the coast before dawn: drive the engine by hand, fight for every station and bridge. A remake of The Train: Escape to Normandy, the 1987 Commodore 64 classic.">
+<meta name="twitter:image" content="https://greykit.com/games/pumaexpress/og.png">
+<meta name="twitter:image:alt" content="A puma's steam train running west through the night with a train of stolen art, its smoke streaming back under the moon.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="stylesheet" href="css/gk-tokens.css?v=7c37e1f9">
+<link rel="stylesheet" href="css/pumaexpress.css?v=87e9e40c">
+</head>
+<body>
+<div id="game" hidden>
+  <div id="stage"><canvas id="screen" width="480" height="300" aria-label="The Puma Express: the night line"></canvas></div>
+  <div id="hud"></div>
+  <div id="corner">
+    <button id="pausebtn" aria-label="Pause" title="Pause (Esc)"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="4" y="3" width="3" height="10" fill="currentColor"/><rect x="9" y="3" width="3" height="10" fill="currentColor"/></svg></button>
+    <button id="snd" aria-label="Sound" aria-pressed="true" title="Sound (M)"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 6h3l4-3v10l-4-3H2z" fill="currentColor"/><path class="on" d="M11 5.5c1.2 1.4 1.2 3.6 0 5M12.8 3.8c2.1 2.4 2.1 6 0 8.4" stroke="currentColor" stroke-width="1.4" fill="none"/><path class="off" d="M11 5.5l4 5M15 5.5l-4 5" stroke="currentColor" stroke-width="1.4"/></svg></button>
+  </div>
+  <div id="live" class="sr" aria-live="polite"></div>
+</div>
+<div id="title" hidden></div>
+<div id="small" role="dialog" aria-labelledby="small-h">
+  <img class="px" src="icon.svg" width="96" height="96" alt="">
+  <h1 id="small-h">The Puma Express is built for a desktop</h1>
+  <p>A steam engine, two guns and a cannon need a keyboard, or a gamepad, and a bigger screen than this. Come back on a computer.</p>
+  <p class="gk-credit">Built by <a href="https://greykit.com/" target="_blank" rel="noopener">greykit.com</a></p>
+</div>
+<script src="js/gk-title.js?v=6080c669"></script>
+<script src="js/util.js?v=079bdf5e"></script>
+<script src="js/engine/const.js?v=3b0033d0"></script>
+<script src="js/engine/route.js?v=edff534e"></script>
+<script src="js/engine/loco.js?v=d07acf16"></script>
+<script src="js/engine/fights.js?v=85fba268"></script>
+<script src="js/engine/world.js?v=3750de30"></script>
+<script src="js/engine/bot.js?v=09ea9195"></script>
+<script src="js/art/kit.js?v=da551a7a"></script>
+<script src="js/art/people.js?v=bc6a9e7b"></script>
+<script src="js/art/people2.js?v=df4eb025"></script>
+<script src="js/art/fx.js?v=aadad78b"></script>
+<script src="js/art/world.js?v=07a96dae"></script>
+<script src="js/art/train.js?v=49872591"></script>
+<script src="js/art/model.js?v=0309cb29"></script>
+<script src="js/art/cab.js?v=df54fbbd"></script>
+<script src="js/art/air.js?v=cd614ff5"></script>
+<script src="js/art/station.js?v=5b0a1880"></script>
+<script src="js/art/bridge.js?v=7ce0b50c"></script>
+<script src="js/art/mapart.js?v=a9e5fe93"></script>
+<script src="js/store.js?v=6158ab29"></script>
+<script src="js/input.js?v=84b1698a"></script>
+<script src="js/sfx.js?v=ef37bc98"></script>
+<script src="js/render.js?v=64ec31a7"></script>
+<script src="js/hud.js?v=76345057"></script>
+<script src="js/screens.js?v=1789a1a3"></script>
+<script src="js/main.js?v=4b0dd72b"></script>
+</body>
+</html>

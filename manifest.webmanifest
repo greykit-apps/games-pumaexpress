@@ -1,0 +1,14 @@
+{
+  "name": "The Puma Express",
+  "short_name": "Puma Express",
+  "description": "Wolves have loaded a train with stolen art. Take it back and run it to the coast before dawn: a remake of The Train: Escape to Normandy, the 1987 Commodore 64 classic.",
+  "start_url": ".",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
