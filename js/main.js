@@ -414,7 +414,7 @@
   const scaleK = () => { const kk = innerHeight / 360; return kk >= 1.5 ? Math.round(kk) : Math.max(1, kk); };
   function fit() {
     const k = scaleK();
-    K.VW = Math.ceil(innerWidth / k); K.VH = Math.ceil(innerHeight / k);
+    K.VW = Math.ceil(innerWidth / k); K.VH = Math.ceil(innerHeight / k); K.SCALE = k;
     const cv = $("screen");
     cv.width = K.VW; cv.height = K.VH;
     const st = $("stage");

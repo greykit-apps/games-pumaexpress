@@ -35,15 +35,28 @@
       const az = (ai + 0.5) / AZ * Math.PI * 2 - Math.PI, el = ((ei + 0.5) / EL - 0.5) * Math.PI * 0.95;
       const v = [Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az)];
       const { U, R } = spriteBasis(v), f = [-v[0], -v[1], -v[2]];
-      const sz = Math.ceil(S * 1.15) + 4, s = S / 11.2;
-      const cam = { ray: (px, py) => { const a = (px - sz / 2) / s, b = (sz / 2 - py) / s; return [[R[0] * a + U[0] * b + v[0] * 30, R[1] * a + U[1] * b + v[1] * 30, R[2] * a + U[2] * b + v[2] * 30], f]; } };
+      /* a wing seen edge on is thinner than a pixel, and one ray a pixel steps over it, leaving a dot: so the wings are
+       * traced at least a ray thick, and a small one three rays to the pixel, any pixel a ray of it strikes kept,
+       * coloured as the rays that struck */
+      const sz = Math.ceil(S * 1.15) + 4, ss = S < 20 ? 3 : 1, Z = sz * ss, s = S / 11.2 * ss;
+      const cam = { ray: (px, py) => { const a = (px - Z / 2) / s, b = (Z / 2 - py) / s; return [[R[0] * a + U[0] * b + v[0] * 30, R[1] * a + U[1] * b + v[1] * 30, R[2] * a + U[2] * b + v[2] * 30], f]; } };
       const L = norm([U[0] * 0.8 + R[0] * 0.35 + v[0] * 0.45, U[1] * 0.8 + R[1] * 0.35 + v[1] * 0.45, U[2] * 0.8 + R[2] * 0.35 + v[2] * 0.45]);
-      const c = Mo.trace(Mo.fighter(), sz, sz, cam, { dir: L, amb: [0.62, 0.66, 0.8], sun: [0.95, 0.95, 1.05] });
+      let c = Mo.trace(Mo.fighter(1.05 / s), Z, Z, cam, { dir: L, amb: [0.62, 0.66, 0.8], sun: [0.95, 0.95, 1.05] });
+      if (ss > 1) {
+        const big = c.getContext("2d").getImageData(0, 0, Z, Z).data, out = K.mk(sz, sz), g2 = out.getContext("2d"), img = g2.createImageData(sz, sz), d = img.data;
+        for (let y = 0; y < sz; y++) for (let x = 0; x < sz; x++) {
+          let n = 0, r = 0, gg = 0, b = 0;
+          for (let j = 0; j < ss; j++) for (let i = 0; i < ss; i++) { const o = ((y * ss + j) * Z + x * ss + i) * 4; if (big[o + 3] > 0) { n++; r += big[o]; gg += big[o + 1]; b += big[o + 2]; } }
+          if (n) { const o = (y * sz + x) * 4; d[o] = r / n; d[o + 1] = gg / n; d[o + 2] = b / n; d[o + 3] = 255; }
+        }
+        g2.putImageData(img, 0, 0); c = out;
+      }
       /* the moon catches its upper edges: a pale rim, so it shows against the night */
       { const g2 = c.getContext("2d"), img = g2.getImageData(0, 0, sz, sz), d = img.data, a2 = (x, y) => x >= 0 && y >= 0 && x < sz && y < sz && d[(y * sz + x) * 4 + 3] > 0, rim = [];
         for (let y = 0; y < sz; y++) for (let x = 0; x < sz; x++) if (a2(x, y) && (!a2(x, y - 1) || (!a2(x + 1, y) && K.hash(x, y, 3) > 0.4))) rim.push([x, y]);
         g2.fillStyle = "#d4dcea"; for (const [x, y] of rim) g2.fillRect(x, y, 1, 1); }
-      if (S >= 24) K.outline(c, "#1a2030");
+      /* and a dark edge all round, so a small one, all wing edge and rim, reads as a shape and not as a star or two */
+      K.outline(c, S >= 24 ? "#1a2030" : INK);
       c.basis = { U, R };
       return c;
     });
@@ -68,7 +81,10 @@
     /* the camera, in the plane's own frame */
     const cw = [0 - fr.pos[0], C.AIR.camY - fr.pos[1], 0 - fr.pos[2]], v = norm([dot(cw, r2), dot(cw, u2), dot(cw, fr.f)]);
     const ai = Math.min(AZ - 1, Math.floor((Math.atan2(v[0], v[2]) + Math.PI) / (Math.PI * 2) * AZ)), ei = PX.clamp(Math.floor((Math.asin(PX.clamp(v[1], -1, 1)) / (Math.PI * 0.95) + 0.5) * EL), 0, EL - 1);
-    const span = cam.f * 11.2 / q.dist, spr = G.planeSprite(ai, ei, span);
+    /* drawn true to size, a fighter is three or four pixels across until it is nearly on you, and a line of wing edge-on:
+     * too little to aim at, though the gun's spread would take it. So it is drawn larger than life while it closes, easing
+     * up to a floor of about thirteen pixels at the edge of its strafing run (all at 360 high), and true once it is nearer */
+    const near = PX.clamp((1600 - q.dist) / 850, 0, 1), span = Math.max(cam.f * 11.2 / q.dist, cam.f * (0.014 + 0.032 * near)), spr = G.planeSprite(ai, ei, span);
     /* the sprite's right and up, out in the world, onto the screen */
     const B = spr.basis, toW = a => [a[0] * r2[0] + a[1] * u2[0] + a[2] * fr.f[0], a[0] * r2[1] + a[1] * u2[1] + a[2] * fr.f[1], a[0] * r2[2] + a[1] * u2[2] + a[2] * fr.f[2]];
     const sR = view === "rear" ? [-1, 0, 0] : [1, 0, 0], sU = [0, 1, 0];
