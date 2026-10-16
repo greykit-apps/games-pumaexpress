@@ -185,8 +185,11 @@
     P.push(Cy("y", [0, 5.9], 0.5, [YC + 0.62, YC + 0.76], "brass"));
     for (const x of [-0.13, 0.13]) P.push(Cy("y", [x, 2.15], 0.07, [3.4, 3.78], "brass"));
     P.push(Cy("y", [0.36, 1.9], 0.05, [3.4, 3.88], "brass"));
-    /* handrails along the boiler */
-    for (const x of [-0.88, 0.88]) P.push(Cy("z", [x, YC + 0.4], 0.03, [2.7, 9.0], "steel"));
+    /* handrails along the boiler, close in on their knobs: from the cab roof a gap between rail and barrel shows */
+    for (const x of [-0.76, 0.76]) {
+      P.push(Cy("z", [x, YC + 0.4], 0.03, [2.7, 9.0], "steel"));
+      for (const z of [2.9, 4.4, 7.4, 8.8]) P.push(Sp([x * 0.96, YC + 0.38, z], 0.05, "steel"));
+    }
     /* the cab: side sheets with their windows and the spectacle plate; the roof; the warm light inside */
     const cabWin = p => (p[2] > 0.25 && p[2] < 1.15 && p[1] > 2.55 && p[1] < 3.35) ? null : Math.abs(p[1] - 2.0) < 0.03 ? "lining" : "paint";
     P.push(B([RW - 0.05, RB, -0.05], [RW, 3.7, 1.6], "paint", cabWin));
