@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>og.png</title>
+<!-- The share card (og.png, 1200x630), laid out as the family's are (a cyan
+     rule, the wordmark with "Puma" in cyan, the description, a tagline, the
+     icon top right) over the title's own picture at twice its pixels: the
+     train running west through the night, side on, its smoke streaming back
+     under the moon. Serve the repo over http, open tools/og.html, and save
+     the canvas (window.ogPNG() is its data URL), or screenshot it headless
+     at 1200x630:
+       chrome --headless --hide-scrollbars --window-size=1200,630
+              --screenshot=og.png http://127.0.0.1:8766/tools/og.html
+     iconArt() composes the icon's drawing and prints it for
+     tools/make-icons.js. Not deployed. -->
+<style>body{margin:0;background:#222;overflow:hidden}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="og" width="1200" height="630"></canvas>
+<script src="../js/util.js"></script>
+<script src="../js/engine/const.js"></script>
+<script src="../js/engine/route.js"></script>
+<script src="../js/art/kit.js"></script>
+<script src="../js/art/people.js"></script>
+<script src="../js/art/people2.js"></script>
+<script src="../js/art/fx.js"></script>
+<script src="../js/art/world.js"></script>
+<script src="../js/art/train.js"></script>
+<script src="../js/art/model.js"></script>
+<script src="../js/render.js"></script>
+<script>
+"use strict";
+(() => {
+  const K = PX.K, Mo = PX.Model;
+  /* the smoke is Math.random's; seeded here, so the card comes out the same every time */
+  Math.random = PX.mulberry(1987);
+
+  /* the scene, 600 x 315, as the title draws it: run on six seconds so the
+   * smoke has streamed back along the train */
+  const W = 600, H = 315, sc = K.mk(W, H);
+  for (let i = 0; i < 175; i++) PX.Render.title(sc, i * 33, 1 / 30);
+
+  const cv = document.getElementById("og"), g = cv.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  g.drawImage(sc, 0, 0, 1200, 630);
+  /* a shade under the words, from the left */
+  const sh = g.createLinearGradient(0, 0, 680, 0);
+  sh.addColorStop(0, "rgba(5,7,15,.96)"); sh.addColorStop(0.6, "rgba(5,7,15,.82)"); sh.addColorStop(1, "rgba(5,7,15,0)");
+  g.fillStyle = sh; g.fillRect(0, 0, 680, 630);
+  g.fillStyle = "#54f2ff"; g.fillRect(0, 0, 1200, 8);
+  const mono = 'Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace';
+  g.textBaseline = "alphabetic";
+  g.font = `bold 84px ${mono}`;
+  g.fillStyle = "#e9e9f2"; g.fillText("The", 72, 132);
+  g.fillStyle = "#54f2ff"; g.fillText("Puma", 72, 222);
+  g.fillStyle = "#e9e9f2"; g.fillText("Express", 72 + g.measureText("Puma ").width, 222);
+  g.font = `32px ${mono}`; g.fillStyle = "#b4bac6";
+  ["Wolves looted a train of art.", "Take it back and run it to", "the coast before dawn."].forEach((l, i) => g.fillText(l, 72, 300 + i * 44));
+  g.font = `26px ${mono}`; g.fillStyle = "#54f2ff";
+  ["A remake of The Train: Escape", "to Normandy (C64, 1987)"].forEach((l, i) => g.fillText(l, 72, 530 + i * 36));
+  /* the icon, top right */
+  const img = new Image();
+  img.onload = () => {
+    g.drawImage(img, 1010, 40, 130, 130);
+    window.ogReady = true; document.title = "ready";
+  };
+  img.src = "../icon.svg?" + Date.now();   // never a cached copy of an old icon
+  window.ogPNG = () => cv.toDataURL("image/png");
+
+  /* the icon's drawing, 40 x 40: the engine at three-quarters, her lamp lit,
+   * her chimney against the moon and her smoke streaming back, over a night
+   * sky in six dithered steps. Traced from the same
+   * model as every other picture of her, with her wheels and the rails added
+   * as solids (the game draws those flat, side on). Prints PAL and ART for
+   * tools/make-icons.js. */
+  window.iconArt = (S = 40) => {
+    const c = K.mk(S, S), x = c.getContext("2d");
+    /* a look-at camera off her right side and a little ahead, looking a little down */
+    const e = [10, 3.2, 13.5], tg = [0, 1.9, 6.2];
+    const nrm = v => { const n = Math.hypot(...v); return v.map(q => q / n); };
+    const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    const fw = nrm(tg.map((q, i) => q - e[i])), rt = nrm([-fw[2], 0, fw[0]]);
+    const up = [rt[1] * fw[2] - rt[2] * fw[1], rt[2] * fw[0] - rt[0] * fw[2], rt[0] * fw[1] - rt[1] * fw[0]];
+    const f = S * 1.1, cx = S * 0.5, cy = S * 0.6;
+    const cam = { ray: (px, py) => { const dx = (px - cx) / f, dy = -(py - cy) / f; return [e, nrm([0, 1, 2].map(i => fw[i] + rt[i] * dx + up[i] * dy))]; } };
+    const proj = p => { const v = p.map((q, i) => q - e[i]), z = dot(v, fw); return { x: cx + f * dot(v, rt) / z, y: cy - f * dot(v, up) / z }; };
+
+    /* the sky */
+    const RAMP = ["#05070f", "#0a1022", "#111a33", "#1b2442", "#26324e", "#3a4a6e"];
+    for (let y = 0; y < S; y++) for (let i = 0; i < S; i++) {
+      const t = Math.pow(y / (S - 1), 1.3) * (RAMP.length - 1) + K.bayer(i, y) * 0.9;
+      x.fillStyle = RAMP[Math.max(0, Math.min(RAMP.length - 1, Math.round(t)))]; x.fillRect(i, y, 1, 1);
+    }
+    for (const [i, y, b] of [[4, 4, 1], [13, 2, 0], [21, 7, 0], [2, 13, 0], [37, 12, 1], [9, 9, 0], [30, 3, 0]]) { x.fillStyle = b ? "#e8ecff" : "#8090c0"; x.fillRect(Math.round(i * S / 40), Math.round(y * S / 40), 1, 1); }
+    /* the moon, behind her chimney, with a pale halo */
+    const ch = proj([0, 4.24, 9.15]), [mx, my, mr] = [ch.x + S * 0.02, ch.y - S * 0.06, S * 0.15];
+    for (let y = 0; y < S; y++) for (let i = 0; i < S; i++) {
+      const d = Math.hypot(i + 0.5 - mx, y + 0.5 - my) / mr;
+      if (d < 1) { x.fillStyle = d > 0.7 && (i + 0.5 - mx) + (y + 0.5 - my) > 0 ? "#c9c6b0" : "#f2eed8"; x.fillRect(i, y, 1, 1); }
+      else if (d < 1.6 && K.bayer(i, y) < 0.5 - (d - 1) / 0.6) { x.fillStyle = "#3a4a6e"; x.fillRect(i, y, 1, 1); }
+    }
+    /* her smoke, streaming back over the boiler and rising: puffs growing and thinning */
+    const SMOKE = ["#d4d8e2", "#aab0c0", "#7e859e", "#5a6280"];
+    for (let k = 7; k >= 0; k--) {
+      const t = k / 7, px = ch.x + t * S * 0.55, py = ch.y - 1.5 - t * S * 0.3 - Math.sin(t * 3) * S * 0.04, r = S * (0.045 + t * 0.09);
+      for (let y = Math.floor(py - r); y <= py + r; y++) for (let i = Math.floor(px - r); i <= px + r; i++) {
+        const dx = (i + 0.5 - px) / r, dy = (y + 0.5 - py) / r, q = dx * dx + dy * dy;
+        if (q > 1 || K.bayer(i, y) + 0.5 > 1.2 - t * 0.45 - q * 0.3) continue;
+        const lv = -dx * 0.5 - dy * 0.8 + K.bayer(i, y) * 0.4;
+        x.fillStyle = SMOKE[Math.max(0, Math.min(3, Math.round(1.4 - lv * 1.2 + t * 1.2)))]; x.fillRect(i, y, 1, 1);
+      }
+    }
+
+    /* the engine, her wheels and the rails, in the model's metres */
+    const Cy = (ax, ctr, r, l, m) => ({ k: "cyl", ax, c: ctr, r, l, m });
+    const parts = Mo.engine();
+    for (const w of Mo.ENGINE_WHEELS) for (const s of [-1, 1]) parts.push(Cy("x", [w.r, w.z], w.r, s > 0 ? [0.9, 1.06] : [-1.06, -0.9], w.d ? "paint" : "black"));
+    for (const s of [-1, 1]) parts.push({ k: "box", a: [s * 0.98 - 0.06, -0.12, -8], b: [s * 0.98 + 0.06, 0, 40], m: "steel" });
+    const light = { dir: [0.62, 0.7, 0.3], amb: [0.5, 0.54, 0.7], sun: [0.85, 0.87, 1.0], lamps: [{ p: [0, 2.6, 0.8], col: [1.4, 0.8, 0.35], r: 2.4 }] };
+    const eng = Mo.trace(parts, S, S, cam, light);
+    K.outline(eng, K.OUT);
+    x.drawImage(eng, 0, 0);
+    /* her lamp, lit */
+    const lp = proj([0, 1.62, 10.62]);
+    x.fillStyle = "#fff6d0"; x.fillRect(Math.floor(lp.x), Math.floor(lp.y), 1, 1);
+    x.fillStyle = "rgba(255,240,190,.45)"; for (const [i, j] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) x.fillRect(Math.floor(lp.x) + i, Math.floor(lp.y) + j, 1, 1);
+
+    /* traced shading leaves a few hundred colours, so a cell is two characters */
+    const d = x.getImageData(0, 0, S, S).data, A = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#";
+    const pal = {}, rev = {}, rows = [];
+    for (let y = 0; y < S; y++) {
+      let r = "";
+      for (let i = 0; i < S; i++) {
+        const o = (y * S + i) * 4, h = "#" + [d[o], d[o + 1], d[o + 2]].map(v => v.toString(16).padStart(2, "0")).join("");
+        if (!(h in rev)) { const n = Object.keys(pal).length, k = A[n >> 6] + A[n & 63]; rev[h] = k; pal[k] = h; }
+        r += rev[h];
+      }
+      rows.push(r);
+    }
+    const out =`const PAL = ${JSON.stringify(pal)};\nconst ART = [\n${rows.map(r => `  "${r}",`).join("\n")}\n];`;
+    console.log(out);
+    return out;
+  };
+  /* tools/og.html?icon prints the drawing into the page, for a headless --dump-dom */
+  if (location.search === "?icon") { const pre = document.createElement("pre"); pre.id = "icon-art"; pre.textContent = window.iconArt(); document.body.appendChild(pre); }
+})();
+</script>
+</body>
+</html>
