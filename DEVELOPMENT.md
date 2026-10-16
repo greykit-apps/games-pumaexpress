@@ -16,7 +16,7 @@ What the game is meant to be is in [PRODUCT.md](PRODUCT.md), and how it looks in
 |---|---|
 | `index.html` | the page: the play canvas, the HUD's host, the title, the note for small screens |
 | `css/gk-tokens.css` | the Tactical palette, byte for byte from games-meta `canon/` (STANDARD.md §4) |
-| `css/pumaexpress.css` | the page, the HUD, and the screens with words on them: flat dark panels over the scene |
+| `css/pumaexpress.css` | the page, the HUD (flat dark panels over the scene), and the screens with words on them (dim lamplit paper and brass) |
 | `fonts/` | Barlow Semi Condensed and Pixelify Sans (SIL Open Font License; the licences are beside them) |
 | `js/gk-title.js` | the greykit.games boot, byte for byte from games-meta `canon/` (§3); the title after it is the game's own, in `js/main.js` |
 | `js/util.js`, `js/engine/*.js` | the game itself, with no DOM in it and no clock or `Math.random`: every number (`const.js`), the line (`route.js`), the engine and its fire (`loco.js`), the three fights (`fights.js`), the night step by step (`world.js`) |
