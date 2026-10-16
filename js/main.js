@@ -149,7 +149,8 @@
     game.ui.mapView = false;
     if (S.phase === "run" && (v === "front" || v === "rear" || v === "cab")) { I.view = v; SFX.play("menu"); }
   };
-  game.pause = () => { if (game.mode !== "play" || UI.sheet) return; I.clear(); checkpoint(); UI.pause(); };
+  /* not once the night is over: its end is showing, and the sheet after it is on its way */
+  game.pause = () => { if (game.mode !== "play" || UI.sheet || PX.Ending.has(game.S)) return; I.clear(); checkpoint(); UI.pause(); };
   game.unpause = () => { game.acc = 0; game.last = performance.now(); };
   game.leave = () => { checkpoint(true); game.toTitle(); };
   game.abandon = () => { const S = game.S; if (!S) return; E.abandon(S); PX.clearGame(); finish(); };
@@ -415,6 +416,13 @@
   function fit() {
     const k = scaleK();
     K.VW = Math.ceil(innerWidth / k); K.VH = Math.ceil(innerHeight / k); K.SCALE = k;
+    /* the HUD grows with the picture's pixels, a little: 1 at k 2, 1.15 at 3, 1.3 at 4 and up; never so far that the
+       bar along the top runs out of width (it needs 1300 for all its labels) */
+    const hz = Math.max(1, Math.min(1 + (k - 2) * 0.15, 1.3, innerWidth / 1300)), ew = innerWidth / hz, root = document.documentElement;
+    root.style.setProperty("--hz", hz.toFixed(3));
+    /* and the bar folds by the width it has once grown, not the window's: the damage labels go first, then the
+       view tabs' names, then the dawn countdown and the line ahead's labels */
+    root.classList.toggle("hud-w1300", ew < 1300); root.classList.toggle("hud-w1160", ew <= 1160); root.classList.toggle("hud-w1100", ew <= 1100);
     const cv = $("screen");
     cv.width = K.VW; cv.height = K.VH;
     const st = $("stage");
@@ -436,7 +444,8 @@
       HUD.build();
       if (q.has("play")) {
         /* debug: ?play=<0-2>&seed=<n> straight into a night; &practice=station|air|bridge; &skip=1 past the yard fight;
-           &t=<minutes past midnight>; &view=cab|front|rear|map; &v=<mph>; &pause=1 */
+           &t=<minutes on from the midnight before: 22:30 is 1350, dawn 1920>; &view=cab|front|rear|map; &v=<mph>; &pause=1;
+           &end=won|dawn|burst|boiler|motion|cut|derail|buffer|frontier to see how the night ends */
         const S = E.newGame({ diff: +(q.get("play") || 1), seed: +(q.get("seed") || 1), practice: q.get("practice") || null });
         if (q.has("skip") && !S.practice) { E.captured(S, []); E.depart(S, "none"); S.cab.brake = 0; }
         if (q.has("t")) S.t = +q.get("t");
@@ -446,6 +455,7 @@
         const v = q.get("view");
         if (v === "map") game.ui.mapView = true; else if (v) S.view = v;
         if (q.has("pause")) game.pause();
+        if (q.has("end")) { const ev = []; if (q.get("end") === "won") E.win(S, ev); else E.end(S, q.get("end"), ev); events(S, ev); }
       } else {
         openTitle();
         const saved = PX.loadGame(), best = PX.scores()[0];

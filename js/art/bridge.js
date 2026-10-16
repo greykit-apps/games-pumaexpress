@@ -194,10 +194,11 @@
     }
     FX.draw(g, "front");
     /* the range scale on the right, the bearing mark over the far bank */
-    const rx = W - 30;
-    g.fillStyle = "rgba(12,14,20,.6)"; g.fillRect(rx - 8, G.top - 18, 36, G.bot - G.top + 26);
-    K.text3(g, "M", rx + 6, G.top - 14, "#9b9284"); K.text3(g, "X100", rx - 4, G.top - 8, "#9b9284");
-    for (const r of [250, 400, 600, 800, 1000, 1200, 1500]) { const y = Math.round(G.yR(r)); K.rect(g, rx, y, 5, 1, "#9b9284"); K.text3(g, String(r / 100 | 0), rx + 8, y - 2, "#b8ae9c"); }
+    const rx = W - 34;
+    g.fillStyle = "rgba(12,14,20,.6)"; g.fillRect(rx - 12, G.top - 28, 44, G.bot - G.top + 36);
+    /* named in the 5 by 7 face, its figures in metres */
+    K.text5(g, "RANGE", rx + 10 - (K.text5w("RANGE") >> 1), G.top - 24, "#d9d2bf"); K.text5(g, "METRES", rx + 10 - (K.text5w("METRES") >> 1), G.top - 14, "#9b9284");
+    for (const r of [250, 400, 600, 800, 1000, 1200, 1500]) { const y = Math.round(G.yR(r)); K.rect(g, rx, y, 5, 1, "#9b9284"); K.text3(g, String(r), rx + 8, y - 2, "#b8ae9c"); }
     const ry2 = Math.round(G.yR(cn.range));
     K.poly(g, [[rx - 7, ry2 - 4], [rx - 1, ry2], [rx - 7, ry2 + 4]], "#ffc35a"); K.rect(g, rx - 1, ry2, 7, 1, "#ffc35a");
     const tx = Math.round(G.xB(cn.bear));

@@ -13,10 +13,10 @@
   const face = () => `<img class="px duc-face" src="${PX.HUD.face || PX.People.ducFace().toDataURL()}" width="80" height="80" alt="">`;
 
   /* ---- the sheet: a panel of its own over whatever was showing; popup, a window to one side ---- */
-  UI.open = (title, { tabs, html, onClick, onClose, onKey, back, tab = 0, wide = false, closable = true, popup = false }) => {
+  UI.open = (title, { tabs, html, onClick, onClose, onKey, back, tab = 0, wide = false, closable = true, popup = false, side = false }) => {
     UI.close(true);
     const el = document.createElement("div");
-    el.className = "pe-sheet " + (popup ? "pe-pop" : "full") + (wide ? " wide" : "") + (tabs ? " tabbed" : "");
+    el.className = "pe-sheet " + (popup ? "pe-pop" : "full") + (side ? " side" : wide ? " wide" : "") + (tabs ? " tabbed" : "");
     el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", title);
     const draw = () => {
       el.innerHTML = '<div class="' + (popup ? "pe-win" : "sh-box") + '"><header class="sh-head">' + (back ? '<button data-back title="Back (Esc)">' + ICON_BACK + "Back</button>" : "") + "<h2>" + esc(title) + "</h2>" +
@@ -134,7 +134,7 @@
       html: () => `<h3 class="mname">${S.practice ? "Practice" : `${PX.hhmm(S.t)} · ${esc(C.DIFF[S.diff].name)}`}</h3>
         <p class="meta">${num(S.score)} points · ${E.paintings(S)} paintings aboard · ${Math.round(S.stats.miles)} miles run</p>
         <div class="col"><button data-act="resume" class="primary">Resume</button>
-        ${S.practice ? "" : `<button data-act="map">The map <kbd>4</kbd></button>`}
+        ${S.practice ? "" : `<button data-act="map">The map</button>`}
         <button data-act="settings">Settings</button><button data-act="help">Help</button>
         <button data-act="leave">Main menu</button></div>
         <div class="note keys legend">${KEYS_CAB().map(([k, w]) => `<span class="k">${k.split(" ").map(x => `<kbd>${x}</kbd>`).join(" ")}</span><span>${w}</span>`).join("")}</div>`,
@@ -152,6 +152,24 @@
       },
       onClose: () => PX.game.unpause(),
     });
+  };
+
+  /* the line ahead, cut from the map itself: the train, the next station and the bridge before it, so the
+     message is chosen with the map in view; drawn at the map's own size and shown at the play screen's scale */
+  const legMap = (S, R) => {
+    const MA = PX.MapArt, k = K.SCALE || 1, W = K.VW, H = K.VH, keep = [MA.last, MA.junctions];
+    const c = K.mk(W, H), g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    MA.draw(g, S, PX.game.ui, performance.now());
+    const f = MA.last; MA.last = keep[0]; MA.junctions = keep[1];
+    const pts = [L.xy(S)];
+    if (R.next >= 0) pts.push([L.nodes[R.next].x, L.nodes[R.next].y]);
+    if (R.bridge >= 0) { const e = L.edges[R.bridge]; pts.push([(L.nodes[e.a].x + L.nodes[e.b].x) / 2, (L.nodes[e.a].y + L.nodes[e.b].y) / 2]); }
+    const xs = pts.map(p => f.x + p[0] * f.k), ys = pts.map(p => f.y + p[1] * f.k);
+    const cw = Math.min(Math.floor(f.w), Math.floor(440 / k)), ch = Math.min(Math.floor(f.h), Math.floor(cw * 0.55));
+    const cx = Math.round(PX.clamp((Math.min(...xs) + Math.max(...xs) - cw) / 2, f.x, f.x + f.w - cw)), cy = Math.round(PX.clamp((Math.min(...ys) + Math.max(...ys) - ch) / 2, f.y, f.y + f.h - ch));
+    const o = K.mk(cw, ch); o.getContext("2d").drawImage(c, cx, cy, cw, ch, 0, 0, cw, ch);
+    return `<figure class="leg"><figcaption class="who">The line ahead</figcaption><img class="px" src="${o.toDataURL()}" width="${cw * k}" height="${ch * k}" alt="The map about the train: the next station and the bridge before it"></figure>`;
   };
 
   /* ---- a station of ours: the report, and the telegraph (1987's four messages) ---- */
@@ -175,12 +193,12 @@
       ["repair", "Need repair", ns < 0 ? "No station ahead to send fitters to." : `Fitters will be waiting at ${nm(ns)}. It costs ${C.REPAIR_MIN} minutes there.`, ns < 0 || L.nodes[ns].final],
       ["none", "No message", "Save the wire. We go as we are.", false],
     ];
-    const first = opts.findIndex(o => !o[3]);
+    const first = opts.findIndex(o => !o[3]), leg = legMap(S, R);
     UI.open(`${L.nodes[n].name}: the station report`, { wide: true, closable: false,
       html: () => `<div class="report">
-        <div class="duc-says">${face()}<div><p class="who">Duc reads the report</p>${lines.map(l => `<p>${l}</p>`).join("")}<p class="meta">${PX.hhmm(S.t)} · ${S.t < C.DAWN ? `dawn in ${Math.floor((C.DAWN - S.t) / 60)}h${String(Math.floor((C.DAWN - S.t) % 60)).padStart(2, "0")}` : "after dawn"}</p></div></div>
+        <div><div class="duc-says">${face()}<div><p class="who">Duc reads the report</p>${lines.map(l => `<p>${l}</p>`).join("")}<p class="meta">${PX.hhmm(S.t)} · ${S.t < C.DAWN ? `dawn in ${Math.floor((C.DAWN - S.t) / 60)}h${String(Math.floor((C.DAWN - S.t) % 60)).padStart(2, "0")}` : "after dawn"}</p></div></div>${leg}</div>
         <div><h3>The telegraph: one message</h3><div class="msgs">${opts.map(([k, t, note, dis], i) => `<button data-msg="${k}"${dis ? " disabled" : ""}${i === first ? " autofocus" : ""}><b><kbd>${i + 1}</kbd>${esc(t)}</b><span>${note}</span></button>`).join("")}</div>
-        <p class="note">Then the line is yours. The map is on <kbd>4</kbd> once you are under way.</p></div></div>`,
+        <p class="note">Then the line is yours. The whole map is on <kbd>4</kbd> once you are under way.</p></div></div>`,
       onKey: ev => { const k = +ev.key; if (k >= 1 && k <= 4 && !opts[k - 1][3]) { ev.preventDefault(); send(opts[k - 1][0]); return true; } return false; },
       onClick: b => { if (b.dataset.msg) send(b.dataset.msg); },
     });
@@ -196,6 +214,12 @@
   };
   const TALLY = [["stations", "Stations taken"], ["bridges", "Bridges cleared"], ["guards", "Wolves shot at the stations"], ["boats", "Gunboats sunk"], ["planes", "Fighters shot down"], ["raids", "Air raids"]];
   const tally = S => `<table class="tally">${TALLY.filter(([k]) => S.stats[k]).map(([k, n]) => `<tr><td>${esc(n)}</td><td class="num">${S.stats[k]}</td></tr>`).join("")}<tr><td>Miles run</td><td class="num">${Math.round(S.stats.miles)}</td></tr></table>`;
+  /* three of the paintings themselves, with their titles: home, or still aboard */
+  const pics = (S, won) => {
+    const n = Math.min(3, E.paintings(S));
+    if (!n) return "";
+    return `<div class="pics"><p class="who">${won ? "Home tonight, among them" : "Still aboard"}</p><div class="pics-row">${Array.from({ length: n }, (_, i) => `<figure><img class="px" src="${PX.Paintings.picture(i, 64, 48).toDataURL()}" width="128" height="96" alt=""><figcaption>${esc(PX.Paintings.title(i))}</figcaption></figure>`).join("")}</div></div>`;
+  };
   UI.gameOver = S => {
     const why = S.end ? S.end.why : "abandon", won = why === "won";
     if (why === "practice") return UI.practiceOver(S);
@@ -207,9 +231,12 @@
     const left = () => `<div><h3 class="mname big${won ? " ok" : why === "abandon" ? " dim" : ""}">${num(S.score)} points</h3>
         <p class="meta">${esc(WHY[why] || "")} ${PX.hhmm(S.t)} · ${esc(C.DIFF[S.diff].name)}</p>
         ${won ? `<p class="closeby">${E.paintings(S)} of ${C.WAGONS * C.PAINTINGS} paintings home · +${num(S.bonus)} for them</p>` : `<p class="closeby">${E.paintings(S)} paintings aboard · ${Math.round(S.stats.miles)} miles from Velmont</p>`}
+        ${pics(S, won)}
         <p class="rank">Rated <b>${esc(rank)}</b></p>${next ? `<p class="note nextrank">Next: ${esc(next[1])}, at ${num(next[0])} points</p>` : ""}${tally(S)}</div>`;
     const ends = `<div class="row end"><button data-act="again" class="primary">Run again</button><button data-act="title">Title</button></div>`;
-    UI.open(title, { wide: true, closable: false,
+    /* the scene of the ending stays in view, the sheet beside it; an abandoned night has none */
+    const side = PX.Ending.has(S);
+    UI.open(title, { wide: true, side, closable: false,
       html: () => `<div class="report">${left()}
         <div>${naming ? `<p class="placed">${place}</p><p>Your name for the table:</p><div class="row"><label class="sr" for="pe-name">Your name</label><input id="pe-name" maxlength="14" value="${esc(PX.lastName())}" placeholder="Puma" autocomplete="off" autofocus><button data-act="save" class="primary">Save</button><button data-act="skip">Skip</button></div><p class="note">Left blank, it is saved as Puma.</p>` :
           `${skipped ? `<p class="placed">${place}</p><p class="note">Not saved to the table.</p>` : ""}${!skipped || PX.scores().length ? `<h3>High scores</h3>${scoresTable(PX.scores(), placed)}` : ""}`}</div></div>
@@ -229,7 +256,7 @@
       placed = PX.addScore({ name, score: S.score, won, at: Date.now(), diff: C.DIFF[S.diff].name, rank, paintings: E.paintings(S), code: !!S.cheated });
       naming = false;
       UI.close(true);
-      UI.open(title, { wide: true, closable: false,
+      UI.open(title, { wide: true, side, closable: false,
         html: () => `<div class="report">${left()}<div>${place ? `<p class="placed">${place}</p>` : ""}<h3>High scores</h3>${scoresTable(PX.scores(), placed)}</div></div>${ends}`,
         onClick: b => { if (b.dataset.act === "again") { UI.close(true); PX.game.start(S.diff); } if (b.dataset.act === "title") { UI.close(true); PX.game.toTitle(); } },
       });
@@ -301,10 +328,10 @@
       <p>Stations the wolves hold stop you, and you fight for them. Gunboats stop you at bridges. Fighters come down the line between. Stop at a station of ours for coal and water and Duc's report, and send one message by telegraph.</p>
       <p>At dawn (08:00) it is over (Classic). Run onto a cut in the line, into the buffers, or over points too fast, and it is over too.</p>
       <p class="gk-credit">${CREDIT}</p>`],
-    ["Driving", `<p><b>Fire, pressure, pull.</b> Coal on the grate heats the boiler; the needle on the left gauge is its pressure. Open the <b>firebox door</b> and shovel when it falls; shut the door again, or the cold air steals the heat. Past the red line the boiler is hurt; much past it, it bursts. The <b>safety valve</b> blows off steam.</p>
+    ["Driving", `<p><b>Fire, pressure, pull.</b> Coal on the grate heats the boiler; the <b>steam</b> gauge on the driver's board shows its pressure, and <b>heat</b> beside it how hot the water is. Open the <b>firebox door</b> and shovel when it falls; shut the door again, or the cold air steals the heat. Past the red line the boiler is hurt; much past it, it bursts. The <b>safety valve</b> blows off steam.</p>
       <p><b>The throttle</b> turns pressure into pull. <b>The reverser</b> sets forward or back: never move it while she rolls. <b>The brake</b> stops her; a station of ours services her when she stands at its platform.</p>
       <p><b>The points:</b> the repeater by the gauges shows how the next junction is set. Whistle once for the northern way, twice for straight on, three times for the southern. Take a turnout slowly.</p>
-      <p>Coal and water run down as you go: the gauges top left. In Classic the cursor is the only hand: <kbd>←</kbd> <kbd>→</kbd> pick a control, <kbd>↑</kbd> <kbd>↓</kbd> work it, <kbd>Space</kbd> uses it.</p>`],
+      <p>Coal and water run down as you go: the two gauges at the right of the bar along the top. In Classic the cursor is the only hand: <kbd>←</kbd> <kbd>→</kbd> pick a control, <kbd>↑</kbd> <kbd>↓</kbd> work it, <kbd>Space</kbd> uses it.</p>`],
     ["The fights", `<table class="enemy">
       <tr><td class="figc">${img(PX.People.wolf("aim", 0), 48, 60)}</td><td><p><b>A station.</b> Duc runs up the platform to the points lever and back, but only while you are firing: give him cover. Wolves come up at the windows, which light when they do. Shoot them before they shoot him, or the engine.</p></td></tr>
       <tr><td class="figc">${img(PX.Guns.plane("head", 48, false), 54, 34)}</td><td><p><b>Fighters.</b> <kbd>1</kbd> the front gun, <kbd>2</kbd> the rear. They strafe on the way in; a fighter that has passed is the other gun's. The tab at the top lights for the gun that is needed.</p></td></tr>

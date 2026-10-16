@@ -47,9 +47,9 @@
     Lo.specs = [{ x0: X(276), y0: Y(28), x1: X(578), y1: Y(150), rt: Math.round(46 * s), rb: 10 }];
     Lo.ctl = {
       door: { x: X(128) - R(44), y: Y(292), w: R(88), h: Y(352) - Y(292), cx: X(128), cy: Y(320) },
-      throttle: { x: X(330), y: Y(248), w: Math.round(108 * u), h: Y(312) - Y(248), cx: X(384), cy: Y(304) },
+      throttle: { x: X(330), y: Y(248), w: Math.round(108 * u), h: Y(312) - Y(248), cx: X(384), cy: Y(304), paw: [X(384) + R(46), Y(282)] },
       reverser: { x: X(466), y: Y(246), w: Math.round(58 * u), h: H - Y(246), cx: X(494), cy: H + 2 },
-      brake: { x: X(548), y: Y(228), w: Math.round(80 * u), h: Y(300) - Y(228), cx: X(586), cy: Y(262) },
+      brake: { x: X(548), y: Y(228), w: Math.round(80 * u), h: Y(300) - Y(228), cx: X(586), cy: Y(262), paw: [X(586) + R(14), Y(254)] },
       whistle: { x: X(470), y: Y(18), w: Math.round(40 * u), h: Y(152) - Y(18), cx: X(490), cy: Y(138) },
       valve: { x: X(74), y: Y(18), w: Math.round(40 * u), h: Y(152) - Y(18), cx: X(94), cy: Y(138) },
       shovel: { x: X(250), y: Y(306), w: Math.round(80 * u), h: H - Y(306), cx: X(290), cy: Y(334) },
@@ -134,6 +134,15 @@
     K.text5(g, text, x + 3, y + 2, M.brass[4]);
   }
 
+  /* a tag hanging from a pull: the plate, in the light where it hangs */
+  function tag(g, x, y, text, m) {
+    const w = K.text5w(text) + 6, h = 11, B = M.brass.map(q => lit(q, m));
+    x = Math.round(x - w / 2); y = Math.round(y);
+    K.rect(g, x + Math.round(w / 2), y - 2, 1, 2, INK);
+    K.rect(g, x, y, w, h, INK); K.rect(g, x + 1, y + 1, w - 2, h - 2, B[2]); K.rect(g, x + 1, y + 1, w - 2, 1, B[0]); K.rect(g, x + 1, y + h - 2, w - 2, 1, B[3]);
+    K.text5(g, text, x + 3, y + 2, B[4]);
+  }
+
   /* ---- the painted cab: everything that does not move ---- */
   function paintCab(Lo, fire) {
     const { W, H, X, Y, R, winH, u } = Lo;
@@ -199,7 +208,9 @@
     handwheel(g, Math.round(mf.x - mf.w / 2 - 22 * u), Y(300), R(9));
     handwheel(g, Math.round(mf.x + mf.w / 2 + 22 * u), Y(300), R(9));
     /* the gauges' faces */
-    for (const [k, max, red, lab, step] of [["psi", 300, C.LOCO.red, "PSI", 100], ["mph", 80, 0, "MPH", 20], ["temp", 500, 450, "F", 0], ["vac", 1, 0, "VAC", 0]]) face(g, Lo.gauges[k], max, red, lab, step);
+    for (const [k, max, red, step] of [["psi", 300, C.LOCO.red, 100], ["mph", 80, 0, 40], ["temp", 500, 450, 0], ["vac", 1, 0, 0]]) face(g, Lo.gauges[k], max, red, step);
+    /* each dial's name on a plate under it, the way the coal and the water have theirs */
+    for (const [k, name] of [["psi", "STEAM"], ["mph", "SPEED"], ["temp", "HEAT"]]) { const G0 = Lo.gauges[k]; plate(g, G0.x, G0.y + G0.r + 2, name); }
     /* the water glass: brass fittings top and bottom with their cocks, the glass, a striped plate behind it */
     const wg = Lo.glass;
     for (let y = wg.y; y < wg.y + wg.h; y++) for (let x = wg.x; x < wg.x + wg.w; x++) { g.fillStyle = ((x - y) & 3) < 2 ? "#e9e4d8" : "#151515"; g.fillRect(x, y, 1, 1); }
@@ -212,7 +223,7 @@
     for (let y = d.y - 5; y < d.y + d.h + 5; y++) for (let x = d.x - 5; x < d.x + d.w + 5; x++) { const inner = x >= d.x && x < d.x + d.w && y >= d.y && y < d.y + d.h; if (inner) continue; const lv = (x < d.x ? 0.5 : x >= d.x + d.w ? -0.5 : 0) + (y < d.y ? 0.6 : y >= d.y + d.h ? -0.6 : 0) + K.bayer(x, y) * 0.3; g.fillStyle = M.brass[PX.clamp(Math.round(2 - lv * 1.6), 0, 4)]; g.fillRect(x, y, 1, 1); }
     for (let x = d.x - 4; x < d.x + d.w + 4; x += 8) { K.rivet(g, x, d.y - 4, M.brass[0], M.brass[4]); K.rivet(g, x, d.y + d.h + 2, M.brass[0], M.brass[4]); }
     K.rect(g, d.x, d.y, d.w, d.h, "#120a06");
-    plate(g, d.cx, d.y + d.h + 8, "FIREBOX");
+    plate(g, d.cx, d.y - 20, "FIREBOX");
     /* the regulator's quadrant: a brass sector, notched, SHUT on the left, OPEN on the right */
     const t = Lo.ctl.throttle, tl = R(50);
     for (let a = -165; a <= -25; a += 1) { const q = a * Math.PI / 180; for (let rr = tl - R(10); rr <= tl - R(6); rr++) K.px(g, t.cx + Math.cos(q) * rr, t.cy + Math.sin(q) * rr, a % 10 === 0 ? M.brass[4] : rr === tl - R(10) ? M.brass[3] : M.brass[1]); }
@@ -391,8 +402,8 @@
     }
     return c;
   });
-  /* a gauge's face: cream, a ring of ticks and figures, the red line, its maker's word */
-  function face(g, G, max, red, lab, step) {
+  /* a gauge's face: cream, a ring of ticks and figures, the red line (its name is on a plate under it) */
+  function face(g, G, max, red, step) {
     const { x, y, r } = G;
     bezel(g, x, y, r, Math.max(3, Math.round(r * 0.16)));
     const fr = r - Math.max(3, Math.round(r * 0.16));
@@ -408,7 +419,6 @@
       K.line(g, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, red && f * max >= red ? "#a52a18" : "#2a241c");
       if (big && step && r >= 20) { const v = String(Math.round(f * max / (max >= 300 ? 100 : 1))); K.text3(g, v, Math.round(x + Math.cos(a) * (fr - 11) - K.text3w(v) / 2), Math.round(y + Math.sin(a) * (fr - 11) - 2), "#3a3226"); }
     }
-    if (lab) K.text3(g, lab, Math.round(x - K.text3w(lab) / 2), Math.round(y + fr * 0.42), "#7a6a52");
   }
 
   /* ---- the boiler through the window: ray-traced once for this size, from the driver's eye ----
@@ -657,8 +667,10 @@
     /* the whistle chain and the valve's pull, hanging from the roof; pulled down when in use */
     const w = Lo.ctl.whistle, wd = c.whistleT > 0 ? 8 : 0, mw = m(w.cx, w.cy);
     chain(g, w.cx, Lo.Y(16), w.cy - 6 + wd, mw); K.rect(g, w.cx - 9, w.cy - 6 + wd, 19, 4, INK); K.rect(g, w.cx - 8, w.cy - 5 + wd, 17, 2, lit(M.wood[1], mw));
+    tag(g, w.cx, w.cy - 1 + wd, "WHISTLE", mw);
     const v = Lo.ctl.valve, vd = c.valve ? 8 : 0, mv = m(v.cx, v.cy);
     chain(g, v.cx, Lo.Y(16), v.cy - 6 + vd, mv); K.ring(g, v.cx, v.cy + vd, 5, INK, 3); K.ring(g, v.cx, v.cy + vd, 4, lit(M.brass[1], mv), 2);
+    tag(g, v.cx, v.cy + 6 + vd, "VALVE", mv);
   }
   const H = Lo => Lo.H;
   /* the way the next points are set: straight on, or bending away north (up) or south (down) */
@@ -689,7 +701,8 @@
       g.fillRect(Math.round(x - (dx < 0 ? 1 : 0)), Math.round(y - (dy < 0 ? 1 : 0)), 1, dy * a);
     }
     const p = paw(), bob = Math.round(Math.sin(now / 260));
-    g.drawImage(p, Math.round(Math.min(Lo.W - p.width, r.cx - 4)), Math.round(Math.min(Lo.H - p.height + 6, r.cy + 6 + bob)));
+    const [px, py] = r.paw || [r.cx - 4, r.cy + 6];
+    g.drawImage(p, Math.round(Math.min(Lo.W - p.width, px)), Math.round(Math.min(Lo.H - p.height + 6, py + bob)));
   }
 
   /* ---- the driver's eye ----
@@ -709,6 +722,9 @@
   /* ---- a frame ---- */
   Cab.draw = (g, S, ui, now, fx) => {
     const W = g.canvas.width, H0 = g.canvas.height, Lo = Cab.layout(W, H0);
+    /* by day the light through the windows fills the cab: its ambient rises with the sky, in four steps */
+    const day = Math.round(K.light(S.t) * 4) / 4;
+    if (day > 0) Lo.amb = Lo.amb.map((a, i) => a + ([0.8, 0.78, 0.74][i] - a) * day);
     Cab.last = Lo;
     const vp = { x: 0, y: 0, w: W, h: Lo.winH };
     const cam = Cab.camera(Lo, vp);
@@ -726,9 +742,9 @@
     if (S.cab.whistleT > 0 && wt) for (let i = 0; i < 5; i++) { const t = (now / 50 + i) % 5; g.fillStyle = `rgba(240,244,250,${(0.6 - t * 0.11).toFixed(2)})`; K.disc(g, wt.x, wt.y - t * 5, 1.5 + t * 1.8, 1 + t); }
     /* the cab, lit by the lamps, and by the fire as it burns */
     const c = S.cab, fireLvl = c.door ? 0.85 + Math.sin(now / 47) * 0.08 + Math.sin(now / 13) * 0.05 : 0.06 + PX.clamp(c.grate / 10, 0, 1) * 0.08;
-    g.drawImage(K.get(`cab:${W}x${H0}:0`, () => paintCab(Lo, false)), 0, 0);
+    g.drawImage(K.get(`cab:${W}x${H0}:0:${day}`, () => paintCab(Lo, false)), 0, 0);
     g.globalAlpha = PX.clamp(fireLvl, 0, 1);
-    g.drawImage(K.get(`cab:${W}x${H0}:1`, () => paintCab(Lo, true)), 0, 0);
+    g.drawImage(K.get(`cab:${W}x${H0}:1:${day}`, () => paintCab(Lo, true)), 0, 0);
     g.globalAlpha = 1;
     moving(g, S, Lo, now);
     if (ui.cursor) cursor(g, Lo, ui.cursor, now);
