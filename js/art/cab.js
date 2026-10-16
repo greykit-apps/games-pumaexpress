@@ -711,10 +711,10 @@
     const W = g.canvas.width, H0 = g.canvas.height, Lo = Cab.layout(W, H0);
     Cab.last = Lo;
     const vp = { x: 0, y: 0, w: W, h: Lo.winH };
-    const cam = Cab.camera(Lo, vp);
-    World.sky(g, S, cam, now);
-    World.hills(g, S, cam);
-    World.ground(g, S, cam, now);
+    const cam = Cab.camera(Lo, vp), wc = World.turned(S, cam, now);
+    World.sky(g, S, wc, now);
+    World.hills(g, S, wc);
+    World.ground(g, S, wc, now);
     const bo = K.get(`boiler:${W}x${H0}`, () => paintBoiler(Lo, cam));
     g.drawImage(bo, 0, 0);
     Cab.chimney = bo.pts.chimney; Cab.valveTop = bo.pts.valve; Cab.whistleTop = bo.pts.whistle; Cab.domeTop = bo.pts.dome;
