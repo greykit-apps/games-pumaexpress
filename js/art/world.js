@@ -13,7 +13,8 @@
  *
  * The sky, the hills and every sprite are drawn once and kept. What is on
  * the line comes from the engine (PX.Line.ahead); the rest is dealt from the
- * distance run, so the same mile looks the same both ways. A mile of line
+ * distance run, so the same mile looks the same both ways: turned round, what
+ * stood on the left stands on the right. A mile of line
  * is VM metres of the picture, so two miles off is already the horizon. */
 "use strict";
 (() => {
@@ -214,7 +215,7 @@
   let gcan = null;
   W.ground = (g, S, c, now) => {
     const vp = c.vp, l = K.light(S.t), its = items(S, c);
-    const pos = S.odoF * W.VM * c.look;
+    const base = S.odoF * W.VM, lk = c.look;               /* where she is along the way she has run, and which way the camera looks along it */
     const water = its.filter(a => a.k === "bridge").map(a => [a.z - 26, a.z + 26]);
     const stops = its.filter(a => a.k === "cut" || a.k === "end" || a.k === "wolf").map(a => a.z);
     const stopZ = stops.length ? Math.min(...stops) : Infinity;
@@ -226,18 +227,18 @@
     const A = ambient(l), hz = haze(l), lamp = c.lamp && l < 0.85 ? 1 - l : 0;
     const mx = vp.x + vp.w * MOON_DIR(c.look) + (c.pan || 0);
     for (let j = 0; j < H; j++) {
-      const y = top + j, z = c.h * c.f / (y - c.hor + 0.5), wz = pos + z;
+      const y = top + j, z = c.h * c.f / (y - c.hor + 0.5), wz = base + lk * z;
       const fog = Math.min(0.92, Math.pow(z / FAR, 1.15));
       const px = z / c.f, cx = c.cx + bend(c, z);           /* metres a pixel, across, at this depth; the centre, turned */
       const onWater = water.some(([a, b]) => z > a && z < b);
       const bank = water.some(([a, b]) => z > a - 5 && z < b + 5);
       const nearSt = stZ.some(s => Math.abs(s - z) < 75);
-      const sleeper = (wz / 0.62) % 1 < 0.34;
+      const sleeper = wz / 0.62 - Math.floor(wz / 0.62) < 0.34;
       const cz = Math.floor(wz / 64), fz = (wz / 64) % 1;
-      const furrowZ = Math.floor(wz / 0.9) % 2;
+      const furrowZ = Math.floor(wz / 0.9) & 1;
       const cut = z > stopZ;
       for (let i = 0; i < vp.w; i++) {
-        const X = (vp.x + i - cx) * px + c.x, aX = Math.abs(X);
+        const X = lk * ((vp.x + i - cx) * px + c.x), aX = Math.abs(X);   /* across the line, + to the right looking forward */
         let r, gr, b, lit = 1;
         if (onWater && aX > 3.4) {
           /* the river: dark, the moon's broken path on it */
@@ -300,7 +301,7 @@
     }
     gg.putImageData(img, 0, 0);
     g.drawImage(gcan, vp.x, top);
-    things(g, S, c, its, pos, l, now);
+    things(g, S, c, its, base, l, now);
   };
 
   /* ---- sprites: trees, farms, haystacks ---- */
@@ -351,7 +352,7 @@
       const barn = v % 2 ? Math.round(7 * s) : 0;
       /* the house */
       K.rect(g, 0, base - hw, w, hw, t(v % 3 ? "#cfc6b0" : "#b9ad94"));
-      K.rect(g, look > 0 ? w - Math.max(1, Math.round(2 * s)) : 0, base - hw, Math.max(1, Math.round(2 * s)), hw, t("#9c937f"));
+      K.rect(g, w - Math.max(1, Math.round(2 * s)), base - hw, Math.max(1, Math.round(2 * s)), hw, t("#9c937f"));   /* the end wall in shadow; flipped below when looking back */
       K.poly(g, [[-1, base - hw], [w / 2, base - hw - hr], [w + 1, base - hw]], t("#8a4a32"));
       for (let y = base - hw - hr + 2; y < base - hw; y += Math.max(2, Math.round(s * 1.2))) { g.fillStyle = t("#6e3826"); g.fillRect(Math.round(w / 2 - (y - (base - hw - hr)) * w / 2 / hr), y, Math.round((y - (base - hw - hr)) * w / hr), 1); }
       K.rect(g, Math.round(w * 0.7), base - hw - hr, Math.max(1, Math.round(1.5 * s)), Math.round(hr * 0.8), t("#6e6658"));
@@ -365,25 +366,30 @@
       K.rect(g, Math.round(w * 0.45), base - Math.round(hw * 0.55), Math.max(1, Math.round(1.8 * s)), Math.round(hw * 0.55), t("#4a3424"));
       /* a barn beside it, dark timber */
       if (barn) { K.rect(g, w + 1, base - Math.round(hw * 0.9), barn, Math.round(hw * 0.9), t("#4a3a2c")); K.poly(g, [[w, base - hw * 0.9], [w + 1 + barn / 2, base - hw * 0.9 - hr * 0.6], [w + 2 + barn, base - hw * 0.9]], t("#3b3f4a")); }
-      return c;
+      /* seen from the other way, the barn is on the house's other side */
+      return look > 0 ? c : K.flip(c);
     });
   };
 
   /* ---- what stands by the line, far to near ---- */
-  function things(g, S, c, its, pos, l, now) {
-    const list = [];
-    const z0 = 3, z1 = FAR;
-    const k0 = Math.ceil((pos + z0) / 55);
-    for (let k = k0; k * 55 < pos + z1; k++) list.push({ z: k * 55 - pos, k: "pole", n: k });
+  function things(g, S, c, its, base, l, now) {
+    /* dealt by where each stands along the way she has run (u) and across it (x, + to the right looking
+     * forward), then turned into the camera's frame: z out from it, x to its right */
+    const list = [], lk = c.look, zOf = u => (u - base) * lk;
+    const z0 = 3, z1 = FAR, uLo = base + Math.min(lk * z0, lk * z1), uHi = base + Math.max(lk * z0, lk * z1);
+    let near = Infinity;
+    for (let k = Math.ceil(uLo / 55); k * 55 <= uHi; k++) { const z = zOf(k * 55); near = Math.min(near, z); list.push({ z, k: "pole", x: -3.6 * lk, n: k }); }
     /* the span from the pole just gone past, behind the camera, to the first one in view */
-    list.push({ z: z0 - 1, k: "span", za: (k0 - 1) * 55 - pos, zb: k0 * 55 - pos });
-    for (let k = Math.ceil((pos + z0) / 16); k * 16 < pos + z1; k++) {
-      const h = K.hash(k, 5, 101), side = K.hash(k, 7) < 0.5 ? -1 : 1;
-      if (h < 0.24) list.push({ z: k * 16 - pos + K.hash(k, 6) * 12, k: "tree", type: K.hash(k, 10) < 0.3 ? "poplar" : K.hash(k, 10) < 0.42 ? "pine" : "oak", x: side * (6 + K.hash(k, 8) * 46), n: k });
-      else if (h < 0.29) list.push({ z: k * 16 - pos, k: "row", x: side * (12 + K.hash(k, 8) * 30), n: k });
-      else if (h < 0.33) list.push({ z: k * 16 - pos, k: "farm", x: side * (30 + K.hash(k, 8) * 70), n: k });
-      else if (h < 0.37) list.push({ z: k * 16 - pos, k: "hay", x: side * (9 + K.hash(k, 8) * 30), n: k });
-      else if (h < 0.47) list.push({ z: k * 16 - pos, k: "post", x: side * 4.6, n: k });
+    list.push({ z: z0 - 1, k: "span", x: -3.6 * lk, za: near - 55, zb: near });
+    for (let k = Math.floor((uLo - 16) / 16); k * 16 <= uHi; k++) {
+      const h = K.hash(k, 5, 101), side = (K.hash(k, 7) < 0.5 ? -1 : 1) * lk, z = zOf(k * 16);
+      /* a fence post's rail runs on to the next post, so it is wanted a little before it comes into view */
+      if (h >= 0.37 && h < 0.47) { if (z > z0 - 16 && z < z1) list.push({ z, k: "post", x: side * 4.6, n: k }); continue; }
+      if (h < 0.24) { const zt = zOf(k * 16 + K.hash(k, 6) * 12); if (zt >= z0 && zt < z1) list.push({ z: zt, k: "tree", type: K.hash(k, 10) < 0.3 ? "poplar" : K.hash(k, 10) < 0.42 ? "pine" : "oak", x: side * (6 + K.hash(k, 8) * 46), n: k }); continue; }
+      if (z < z0 || z >= z1) continue;
+      if (h < 0.29) list.push({ z, k: "row", x: side * (12 + K.hash(k, 8) * 30), n: k });
+      else if (h < 0.33) list.push({ z, k: "farm", x: side * (30 + K.hash(k, 8) * 70), n: k });
+      else if (h < 0.37) list.push({ z, k: "hay", x: side * (9 + K.hash(k, 8) * 30), n: k });
     }
     for (const a of its) {
       if (a.k === "node") {
@@ -399,7 +405,7 @@
     list.sort((a, b) => b.z - a.z);
     const ctx = { prevPole: null };
     for (const o of list) {
-      if (o.z < 2 && o.k !== "station" && o.k !== "bridge") continue;
+      if (o.z < 2 && o.k !== "station" && o.k !== "bridge" && o.k !== "post") continue;
       if ((o.k === "tree" || o.k === "farm" || o.k === "hay" || o.k === "row" || o.k === "post") && (stations.some(s => Math.abs(s.z - o.z) < 80) || bridges.some(s => Math.abs(s.z - o.z) < 34 && Math.abs(o.x || 0) < 60))) continue;
       DRAW[o.k](g, c, o, l, now, S, ctx);
     }
@@ -409,14 +415,14 @@
   const onScreen = (c, x, w) => x > c.vp.x - w && x < c.vp.x + c.vp.w + w;
   const DRAW = {
     pole(g, c, o, l, now, S, ctx) {
-      const b = P(c, -3.6, 0, o.z), t = P(c, -3.6, 7.2, o.z), w = Math.max(1, Math.round(0.22 * b.s));
+      const b = P(c, o.x, 0, o.z), t = P(c, o.x, 7.2, o.z), w = Math.max(1, Math.round(0.22 * b.s));
       const col = fogged("#3b2c1f", l, o.z);
       g.fillStyle = col; g.fillRect(Math.round(b.x), Math.round(t.y), w, Math.max(1, Math.round(b.y - t.y)));
       const cw = Math.round(1.1 * b.s), arm = Math.round(t.y + 0.35 * b.s);
       g.fillRect(Math.round(b.x - cw), arm, cw * 2 + w, Math.max(1, Math.round(0.12 * b.s)));
       if (b.s > 6) { g.fillStyle = fogged("#c9c6bc", l, o.z); for (const f of [-0.9, -0.3, 0.3, 0.9]) g.fillRect(Math.round(b.x + f * cw), arm - 1, 1, 1); }
       /* the wires, sagging to the next pole */
-      if (o.z < 600) DRAW.span(g, c, { za: o.z, zb: o.z + 55 }, l);
+      if (o.z < 600) DRAW.span(g, c, { x: o.x, za: o.z, zb: o.z + 55 }, l);
     },
     span(g, c, o, l) {
       /* a pair of wires from the crossarm at za to the one at zb, sagging half a metre at the middle. A
@@ -424,7 +430,7 @@
       const Y = 6.85, sag = z => 0.5 * Math.sin((z - o.za) / (o.zb - o.za) * Math.PI);
       g.fillStyle = l < 0.4 ? "rgba(20,26,40,.9)" : "rgba(40,40,46,.8)";
       for (const f of [-0.99, 0.99]) {
-        const X = -3.6 + f, zn = Math.max(o.za, 0.05, Math.abs(X - c.x) * c.f / c.vp.w, Math.abs(Y - c.h) * c.f / c.vp.h);
+        const X = o.x + f, zn = Math.max(o.za, 0.05, Math.abs(X - c.x) * c.f / c.vp.w, Math.abs(Y - c.h) * c.f / c.vp.h);
         if (zn >= o.zb) continue;
         const a = P(c, X, Y - sag(zn), zn), b = P(c, X, Y, o.zb);
         const n = PX.clamp(Math.ceil((Math.abs(b.x - a.x) + Math.abs(b.y - a.y)) / 6), 2, 64);
@@ -449,7 +455,7 @@
     },
     row(g, c, o, l, now, S) {
       /* a line of poplars along a field edge, the puma country's own */
-      for (let i = 0; i < 5; i++) DRAW.tree(g, c, { x: o.x, z: o.z + i * 7, type: "poplar", n: o.n * 7 + i }, l, now, S);
+      for (let i = 0; i < 5; i++) { const z = o.z + i * 7 * c.look; if (z >= 3) DRAW.tree(g, c, { x: o.x, z, type: "poplar", n: o.n * 7 + i }, l, now, S); }
     },
     farm(g, c, o, l) {
       const b = P(c, o.x, 0, o.z), s = b.s * 0.6; if (s < 0.5) return;
@@ -465,9 +471,15 @@
       K.disc(g, b.x - r * 0.3 * c.look, b.y - r * 1.1, r * 0.7, r * 0.45, fogged("#9a8650", l, o.z));
     },
     post(g, c, o, l) {
-      const b = P(c, o.x, 0, o.z), t = P(c, o.x, 1.1, o.z); if (b.s < 1.5) return;
-      g.fillStyle = fogged("#3a2c20", l, o.z); g.fillRect(Math.round(b.x), Math.round(t.y), Math.max(1, Math.round(0.12 * b.s)), Math.max(1, Math.round(b.y - t.y)));
-      const n = P(c, o.x, 0.85, o.z + 16); g.fillStyle = fogged("#2c2219", l, o.z); K.line(g, b.x, t.y + 1, n.x, n.y);
+      /* the post, and its rail on to the next one along the line, cut where it leaves the picture */
+      const zc = Math.max(0.05, Math.abs(o.x - c.x) * c.f / c.vp.w), za = o.z, zb = o.z + 16 * c.look;
+      if (za >= 2) {
+        const b = P(c, o.x, 0, za), t = P(c, o.x, 1.1, za); if (b.s < 1.5) return;
+        g.fillStyle = fogged("#3a2c20", l, za); g.fillRect(Math.round(b.x), Math.round(t.y), Math.max(1, Math.round(0.12 * b.s)), Math.max(1, Math.round(b.y - t.y)));
+      }
+      if (Math.max(za, zb) <= zc) return;
+      const p = P(c, o.x, 0.85, Math.max(za, zc)), n = P(c, o.x, 0.85, Math.max(zb, zc)); if (Math.min(p.s, n.s) < 1.5) return;
+      g.fillStyle = fogged("#2c2219", l, o.z); K.line(g, p.x, p.y, n.x, n.y);
     },
     station(g, c, o, l, now, S) {
       const side = o.side, plat0 = Math.max(2.5, o.z - 75), plat1 = o.z + 75;
