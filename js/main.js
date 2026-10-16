@@ -47,6 +47,14 @@
       ],
     };
   }
+  /* the Resistance's rubber stamp on its timetable: a puma's paw, a pixel at a time */
+  const PAW = (() => {
+    const g = ["....XXX..XXX....", "....XXX..XXX....", "XX..XXX..XXX..XX", "XXX..........XXX", "XXX..........XXX", "......XXXX......", "....XXXXXXXX....",
+      "...XXXXXXXXXX...", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "...XXXX..XXXX...", "....XX....XX...."];
+    let d = "";
+    g.forEach((r, y) => r.replace(/X+/g, (m, x) => { d += `M${x} ${y}h${m.length}v1h-${m.length}z`; return m; }));
+    return `<svg class="tt-paw" viewBox="0 0 16 13" shape-rendering="crispEdges"><path fill="currentColor" d="${d}"/></svg>`;
+  })();
   function titleHTML(cfg) {
     const items = cfg.items.filter(Boolean), gap = items.indexOf("gap");
     const main = items.slice(0, gap), util = items.slice(gap + 1);
@@ -59,9 +67,9 @@
       <main>
         <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="plate" aria-hidden="true"><span class="the">The</span><span class="nm">Puma Express</span></span></h1>
         <nav class="pe-menu" aria-label="Main menu">
-          <header class="tt-head" aria-hidden="true"><p class="tt-co"><s>Wolf Empire Railways</s></p><p class="tt-svc">Night service · Velmont to Port Clair</p><p class="tt-no">One train · forty-eight paintings</p><span class="tt-stamp">Requisitioned</span></header>
+          <header class="tt-head" aria-hidden="true"><p class="tt-co">Private · not for publication</p><p class="tt-svc">Special working · Velmont to Port Clair</p><p class="tt-no">One train · forty-eight paintings · before dawn</p></header>
           ${main.map(it => btn(it, true)).join("")}<div class="util">${util.map(it => btn(it, false)).join("")}</div>
-          <p class="tt-foot" aria-hidden="true">By order of the Resistance. Runs before dawn only.</p>
+          <p class="tt-foot" aria-hidden="true"><span>Issued by the Resistance. Burn after reading.</span>${PAW}</p>
         </nav>
       </main>
       <footer class="pe-foot"><span class="gk-credit">${UI.CREDIT}</span></footer>
