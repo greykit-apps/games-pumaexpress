@@ -13,10 +13,10 @@
   const face = () => `<img class="px duc-face" src="${PX.HUD.face || PX.People.ducFace().toDataURL()}" width="80" height="80" alt="">`;
 
   /* ---- the sheet: a panel of its own over whatever was showing; popup, a window to one side ---- */
-  UI.open = (title, { tabs, html, onClick, onClose, onKey, back, tab = 0, wide = false, closable = true, popup = false, side = false }) => {
+  UI.open = (title, { tabs, html, onClick, onClose, onKey, back, tab = 0, wide = false, closable = true, popup = false, side = false, cls = "" }) => {
     UI.close(true);
     const el = document.createElement("div");
-    el.className = "pe-sheet " + (popup ? "pe-pop" : "full") + (side ? " side" : wide ? " wide" : "") + (tabs ? " tabbed" : "");
+    el.className = "pe-sheet " + (popup ? "pe-pop" : "full") + (side ? " side" : wide ? " wide" : "") + (tabs ? " tabbed" : "") + (cls ? " " + cls : "");
     el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", title);
     const draw = () => {
       el.innerHTML = '<div class="' + (popup ? "pe-win" : "sh-box") + '"><header class="sh-head">' + (back ? '<button data-back title="Back (Esc)">' + ICON_BACK + "Back</button>" : "") + "<h2>" + esc(title) + "</h2>" +
@@ -130,9 +130,13 @@
   const KEYS_CAB = () => (PX.aid("direct") ? [["W S", "throttle"], ["X Z", "brake"], ["F", "door"], ["G", "shovel"], ["H", "whistle"], ["E Q", "reverser"]] : [["← →", "the controls"], ["↑ ↓", "work it"], ["Space", "use it"]]).concat([["1 2", "guns"], ["3", "cab"], ["4", "map"], ["L", "aids"]]);
   UI.pause = () => {
     const S = PX.game.S;
-    UI.open("Paused", { popup: true,
-      html: () => `<h3 class="mname">${S.practice ? "Practice" : `${PX.hhmm(S.t)} · ${esc(C.DIFF[S.diff].name)}`}</h3>
-        <p class="meta">${num(S.score)} points · ${E.paintings(S)} paintings aboard · ${Math.round(S.stats.miles)} miles run</p>
+    /* a telegram from the line: the night so far on pasted tape, the replies below it */
+    const tape = S.practice ? ["Practice stop", "Nothing on the line stop", "Nothing saved stop"]
+      : [`Halted ${PX.hhmm(S.t)} stop ${C.DIFF[S.diff].name} stop`, `${num(S.score)} points stop ${E.paintings(S)} paintings aboard stop`, `${Math.round(S.stats.miles)} miles run stop dawn at ${PX.hhmm(C.DAWN)} stop`];
+    UI.open("Paused", { popup: true, cls: "pe-tg",
+      html: () => `<dl class="tg-form"><div><dt>Office</dt><dd>The cab</dd></div><div><dt>From</dt><dd>Duc</dd></div><div><dt>Handed in</dt><dd class="num">${PX.hhmm(S.t)}</dd></div></dl>
+        <div class="tg-tape">${tape.map(t => `<p>${esc(t)}</p>`).join("")}</div>
+        <p class="tg-reply" aria-hidden="true">Reply</p>
         <div class="col"><button data-act="resume" class="primary">Resume</button>
         ${S.practice ? "" : `<button data-act="map">The map</button>`}
         <button data-act="settings">Settings</button><button data-act="help">Help</button>

@@ -36,8 +36,8 @@
       name: "The Puma Express",
       primary: saved ? "resume" : "new",
       items: [
-        saved && { act: "resume", label: "Resume game", key: "R", meta: `${PX.hhmm(saved.S.t)}, ${L.nodes[L.edges[saved.S.tr.e].a].name.replace("Velmont junction", "Velmont")}` },
-        { act: "new", label: "New game", key: "N", meta: d.name },
+        saved && { act: "resume", label: "Resume game", key: "R", meta: L.nodes[L.edges[saved.S.tr.e].a].name.replace("Velmont junction", "Velmont"), time: PX.hhmm(saved.S.t) },
+        { act: "new", label: "New game", key: "N", meta: d.name, time: PX.hhmm(d.start) },
         { act: "practice", label: "Practice a fight", key: "P", meta: "station, air, bridge" },
         { act: "scores", label: "High scores", key: "O", meta: best ? best.score.toLocaleString("en-US") : "" },
         "gap",
@@ -47,18 +47,33 @@
       ],
     };
   }
+  /* the Resistance's rubber stamp on its orders: a puma's paw, a pixel at a time */
+  const PAW = (() => {
+    const g = ["....XXX..XXX....", "....XXX..XXX....", "XX..XXX..XXX..XX", "XXX..........XXX", "XXX..........XXX", "......XXXX......", "....XXXXXXXX....",
+      "...XXXXXXXXXX...", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "...XXXX..XXXX...", "....XX....XX...."];
+    let d = "";
+    g.forEach((r, y) => r.replace(/X+/g, (m, x) => { d += `M${x} ${y}h${m.length}v1h-${m.length}z`; return m; }));
+    return `<svg class="tt-paw" viewBox="0 0 16 13" shape-rendering="crispEdges"><path fill="currentColor" d="${d}"/></svg>`;
+  })();
   function titleHTML(cfg) {
     const items = cfg.items.filter(Boolean), gap = items.indexOf("gap");
     const main = items.slice(0, gap), util = items.slice(gap + 1);
     let i = 0;
+    /* a line of the orders: the key, the action, dots to what it is and when it leaves */
     const btn = (it, big) => `<button data-act="${it.act}" class="pr${it.act === cfg.primary ? " dflt" : ""}" style="--i:${i++}"><kbd>${esc(it.key)}</kbd><span class="lbl">${esc(it.label)}</span>` +
-      (big && it.meta ? `<span class="meta">${esc(it.meta)}</span>` : "") + "</button>";
+      (big ? `<span class="dots" aria-hidden="true"></span><span class="meta">${esc(it.meta || "")}</span><span class="tm">${esc(it.time || "")}</span>` : "") + "</button>";
     return `<div class="pe-title">
       <canvas class="pe-scene" aria-hidden="true"></canvas><div class="pe-shade" aria-hidden="true"></div>
       <main>
-        <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="the">The</span><span><span class="puma">Puma</span> Express</span></h1>
-        <p class="pe-sub"><span>Velmont to Port Clair ·</span> <span>one night ·</span> <span>forty-eight paintings</span></p>
-        <nav class="pe-menu" aria-label="Main menu">${main.map(it => btn(it, true)).join("")}<div class="util">${util.map(it => btn(it, false)).join("")}</div></nav>
+        <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="plate" aria-hidden="true"><span class="the">The</span><span class="nm">Puma Express</span></span></h1>
+        <nav class="pe-menu" aria-label="Main menu">
+          <header class="tt-head" aria-hidden="true"><p class="tt-co">Resistance · operation orders</p><p class="tt-svc">The train at Velmont</p><span class="tt-secret">Most secret</span></header>
+          <div class="od" aria-hidden="true"><p><b>1. Situation.</b> The wolves have loaded forty-eight paintings onto a train in the yards at Velmont, bound for the Empire.</p>
+            <p><b>2. Object.</b> Seize the train. Get it to Port Clair before dawn. Send Resistance orders from stations. Godspeed.</p><p class="od-h"><b>3. Method.</b></p></div>
+          ${main.map(it => btn(it, true)).join("")}
+          <p class="od-h adm" aria-hidden="true"><b>4. Administration.</b></p><div class="util">${util.map(it => btn(it, false)).join("")}</div>
+          <p class="tt-foot" aria-hidden="true"><span>For the Resistance. Burn after reading.</span>${PAW}</p>
+        </nav>
       </main>
       <footer class="pe-foot"><span class="gk-credit">${UI.CREDIT}</span></footer>
     </div>`;
