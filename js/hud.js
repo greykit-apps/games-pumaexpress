@@ -122,7 +122,7 @@
   const POINTS = ["north", "straight on", "south"];
   const mi = d => d < 0.95 ? `${Math.max(1, Math.round(d * 10)) / 10} mi` : `${Math.round(d)} mi`;
   function ahead(S) {
-    const rows = [], a = L.ahead(S, 60, S.tr.v === 0 ? S.tr.face : 0);
+    const rows = [], a = L.ahead(S, 60, L.heading(S));
     const j = a.find(x => x.k === "node" && L.isJunction(x.n) && x.d > 0.1);
     if (j) rows.push(["Points", `${L.nodes[j.n].name}`, `${mi(j.d)} · <b class="pt">${POINTS[S.pts[j.n]]}</b>`, ""]);
     const st = a.find(x => x.k === "node" && L.nodes[x.n].kind === "st" && x.d > C.STATION_ZONE);
@@ -148,11 +148,21 @@
       const mk = f => { const c = K.mk(16, 16), g = c.getContext("2d"); f(g); return `<img class="lg" src="${c.toDataURL()}" width="32" height="32" alt="">`; };
       return [[mk(g => M.station(g, 8, 8, "ours", "#e2ad6a")), "station, ours"], [mk(g => M.station(g, 8, 8, "held", "#e8573a")), "station, wolves"], [mk(g => M.station(g, 8, 8, "final", "#f2ecd8")), "Port Clair"],
         [mk(g => { K.rect(g, 4, 6, 9, 5, "#0b0d12"); K.rect(g, 5, 7, 7, 3, "#c9c2b4"); }), "bridge"], [mk(g => M.boat(g, 8, 8, "#e8573a")), "gunboats"], [mk(g => M.cross(g, 8, 8, "#e8573a")), "line cut"],
-        [mk(g => { K.poly(g, [[8, 4], [12, 8], [8, 12], [4, 8]], "#9b9284"); }), "junction"], [mk(g => { K.ring(g, 8, 8, 6, "#e2ad6a", 2); K.line(g, 5, 8, 11, 8, "#fff", 2); }), "the train"]]
+        [mk(g => { K.poly(g, [[8, 4], [12, 8], [8, 12], [4, 8]], "#b3aa9a"); }), "junction"], [mk(g => { K.ring(g, 8, 8, 6, "#e2ad6a", 2); K.line(g, 5, 8, 11, 8, "#fff", 2); }), "the train"],
+        [mk(g => { K.disc(g, 8, 8, 3, 3, "#e2ad6a"); M.held(g, 8, 8, 6, "#7fd28a"); }), "held for us"], [mk(g => { K.line(g, 2, 8, 14, 8, "#0b0d12", 5); K.line(g, 2, 8, 14, 8, "#ffc35a", 3); }), "the way set"]]
         .map(([i, n]) => `<span>${i}${n}</span>`).join("");
     });
+    /* where the points as they lie will take her (the route aid), said in words as well as lit on the map */
+    let lead = "";
+    if (ui.aids.route) {
+      const P = L.path(S), mi = ` · ${Math.round(P.d)} mi`, nm = n => esc(L.nodes[n].name);
+      const [c, t] = { home: () => ["ok", `to Port Clair${mi}`], end: () => ["bad", `to the buffers at ${nm(P.n)}${mi}`], wolf: () => ["bad", `over the Wolf frontier${mi}`],
+        cut: () => ["bad", `into the cut in the line${mi}`], loop: () => ["bad", `round in a circle: ${nm(P.n)} turns her back onto the lit line`], far: () => ["", "on and on"] }[P.k]();
+      lead = `<div class="h-lead ${c}"><span>The points lead</span><b>${t}</b></div>`;
+    }
     const html = `<h2>The line</h2>
       <p class="h-mvst">${PX.hhmm(S.t)} · ${S.t < C.DAWN ? `dawn in ${Math.floor((C.DAWN - S.t) / 60)}h${String(Math.floor((C.DAWN - S.t) % 60)).padStart(2, "0")}` : "after dawn"} · ${Math.round(S.stats.miles)} miles run</p>
+      ${lead}
       <div class="h-kr"><span>Stations taken</span><b class="num">${S.stats.stations}</b></div>
       <div class="h-kr"><span>Bridges cleared</span><b class="num">${S.stats.bridges}</b></div>
       <div class="h-kr"><span>Fighters down</span><b class="num">${S.stats.planes}</b></div>
