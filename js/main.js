@@ -47,7 +47,7 @@
       ],
     };
   }
-  /* the Resistance's rubber stamp on its timetable: a puma's paw, a pixel at a time */
+  /* the Resistance's rubber stamp on its orders: a puma's paw, a pixel at a time */
   const PAW = (() => {
     const g = ["....XXX..XXX....", "....XXX..XXX....", "XX..XXX..XXX..XX", "XXX..........XXX", "XXX..........XXX", "......XXXX......", "....XXXXXXXX....",
       "...XXXXXXXXXX...", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "...XXXX..XXXX...", "....XX....XX...."];
@@ -59,7 +59,7 @@
     const items = cfg.items.filter(Boolean), gap = items.indexOf("gap");
     const main = items.slice(0, gap), util = items.slice(gap + 1);
     let i = 0;
-    /* a timetable's line: the key, the service, dots to what it is and when it leaves */
+    /* a line of the orders: the key, the action, dots to what it is and when it leaves */
     const btn = (it, big) => `<button data-act="${it.act}" class="pr${it.act === cfg.primary ? " dflt" : ""}" style="--i:${i++}"><kbd>${esc(it.key)}</kbd><span class="lbl">${esc(it.label)}</span>` +
       (big ? `<span class="dots" aria-hidden="true"></span><span class="meta">${esc(it.meta || "")}</span><span class="tm">${esc(it.time || "")}</span>` : "") + "</button>";
     return `<div class="pe-title">
@@ -67,9 +67,12 @@
       <main>
         <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="plate" aria-hidden="true"><span class="the">The</span><span class="nm">Puma Express</span></span></h1>
         <nav class="pe-menu" aria-label="Main menu">
-          <header class="tt-head" aria-hidden="true"><p class="tt-co">Private · not for publication</p><p class="tt-svc">Special working · Velmont to Port Clair</p><p class="tt-no">One train · forty-eight paintings · before dawn</p></header>
-          ${main.map(it => btn(it, true)).join("")}<div class="util">${util.map(it => btn(it, false)).join("")}</div>
-          <p class="tt-foot" aria-hidden="true"><span>Issued by the Resistance. Burn after reading.</span>${PAW}</p>
+          <header class="tt-head" aria-hidden="true"><p class="tt-co">Resistance · operation orders</p><p class="tt-svc">The train at Velmont</p><span class="tt-secret">Most secret</span></header>
+          <div class="od" aria-hidden="true"><p><b>1. Situation.</b> The wolves have loaded forty-eight paintings onto a train in the yards at Velmont, bound for the Empire.</p>
+            <p><b>2. Object.</b> Seize the train. Run it west to Port Clair, on the free coast, before dawn.</p><p class="od-h"><b>3. Method.</b></p></div>
+          ${main.map(it => btn(it, true)).join("")}
+          <p class="od-h adm" aria-hidden="true"><b>4. Administration.</b></p><div class="util">${util.map(it => btn(it, false)).join("")}</div>
+          <p class="tt-foot" aria-hidden="true"><span>For the Resistance. Burn after reading.</span>${PAW}</p>
         </nav>
       </main>
       <footer class="pe-foot"><span class="gk-credit">${UI.CREDIT}</span></footer>
