@@ -366,6 +366,12 @@ img.fig { display: inline-block; vertical-align: middle; }
 .h-kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 15px; padding: 3px 0; border-bottom: 1px solid var(--pe-hair); }
 .h-kr span { color: var(--pe-muted); }
 .h-kr b.ok { color: var(--pe-green); font-weight: 600; }
+.h-lead { margin: 0 0 8px; padding: 6px 10px; border-left: 3px solid var(--pe-yellow); background: rgba(242,193,78,.07); font-size: 15px; line-height: 1.3; }
+.h-lead span { display: block; color: var(--pe-muted); font-size: 13px; }
+.h-lead b { font-weight: 600; }
+.h-lead.ok b { color: var(--pe-green); }
+.h-lead.bad { border-left-color: var(--pe-red); background: rgba(232,87,58,.08); }
+.h-lead.bad b { color: var(--pe-red-text); }
 .h-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 10px; font-size: 13px; color: var(--pe-muted); }
 .h-legend span { display: flex; align-items: center; gap: 4px; }
 .h-legend .lg { width: 32px; height: 32px; display: block; image-rendering: pixelated; margin: -6px -4px; }

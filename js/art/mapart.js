@@ -12,7 +12,7 @@
 "use strict";
 (() => {
   const K = PX.K, M = K.M, C = PX.C, L = PX.Line, MA = PX.MapArt = {};
-  const INK = "#0b0d12", PAPER = "#121c2c", PAPER2 = "#16233a", LINE = "#d9d2bf", OURS = "#e2ad6a", THEIRS = "#e8573a", WATER = "#3d6f96";
+  const INK = "#0b0d12", PAPER = "#121c2c", PAPER2 = "#16233a", LINE = "#d9d2bf", OURS = "#e2ad6a", THEIRS = "#e8573a", WATER = "#3d6f96", LIT = "#ffc35a";
 
   /* the rectangle the map takes: left of the side panel, its own shape kept. The panel is the page's,
    * 230 CSS pixels wide and 14 in from the edge; s is how many CSS pixels a canvas pixel is (main.js) */
@@ -212,33 +212,47 @@
   function cross(g, x, y, col) { x = Math.round(x); y = Math.round(y); for (let i = -4; i <= 4; i++) { K.rect(g, x + i - 1, y + i - 1, 3, 3, INK); K.rect(g, x + i - 1, y - i - 1, 3, 3, INK); } for (let i = -3; i <= 3; i++) { K.rect(g, x + i, y + i, 2, 2, col); K.rect(g, x + i, y - i, 2, 2, col); } }
   MA.mark = { station, boat: boatMark, cross };
 
+  /* the lit way: a dark casing, the lamp-coloured line, and sparks running along it the way she will go */
+  function litWay(g, pts, now) {
+    for (let i = 0; i < pts.length - 1; i++) K.line(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], INK, 5);
+    for (let i = 0; i < pts.length - 1; i++) K.line(g, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], LIT, 3);
+    if (PX.calm && PX.calm()) return;
+    let at = (now / 1000 * 22) % 16;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], len = Math.hypot(x1 - x0, y1 - y0);
+      for (; at < len; at += 16) K.rect(g, Math.round(x0 + (x1 - x0) * at / len) - 1, Math.round(y0 + (y1 - y0) * at / len) - 1, 2, 2, "#fff4d6");
+      at -= len;
+    }
+  }
+  /* how the lit way ends: home is a ring round Port Clair; the buffers and the frontier a red bar across; a loop a red ring at the junction that turns her back; a cut is its own cross */
+  function wayEnd(g, P, pts, now) {
+    const [x, y] = pts[pts.length - 1];
+    if (P.k === "home") { const r = 11 + (PX.calm && PX.calm() ? 0 : Math.floor(now / 500) % 2); K.ring(g, x, y, r + 1, INK, 4); K.ring(g, x, y, r, LIT, 2); return; }
+    if (P.k === "loop") { K.ring(g, x, y, 8, INK, 4); K.ring(g, x, y, 7, THEIRS, 2); return; }
+    if (P.k === "far" || P.k === "cut" || pts.length < 2) return;
+    const [px, py] = pts[pts.length - 2], d = Math.hypot(x - px, y - py) || 1, nx = -(y - py) / d * 6, ny = (x - px) / d * 6;
+    K.line(g, x - nx, y - ny, x + nx, y + ny, INK, 5); K.line(g, x - nx, y - ny, x + nx, y + ny, THEIRS, 3);
+  }
+
   MA.draw = (g, S, ui, now) => {
     const W = g.canvas.width, H = g.canvas.height, f = MA.frame(W, H);
     MA.last = f;
     g.drawImage(base(W, H), 0, 0);
-    /* the way the points lead, lit (the route aid), and where it ends */
-    const ahead = L.ahead(S, 400, S.tr.v === 0 ? S.tr.face : 0);
-    if (ui.aids.route) {
-      let [px, py] = L.xy(S);
-      const col = "rgba(255,195,90,.85)";
-      for (const a of ahead) {
-        if (a.k !== "node") continue;
-        const N = L.nodes[a.n];
-        K.line(g, X(f, px), Y(f, py), X(f, N.x), Y(f, N.y), col, 2);
-        px = N.x; py = N.y;
-      }
-    }
+    /* the way the points lead, lit (the route aid), ended where she would stop: Port Clair, the buffers, the frontier,
+       a known cut, or the junction that would send her round again (L.path) */
+    const P = L.path(S), pts = P.pts.map(([x, y]) => [X(f, x), Y(f, y)]);
+    if (ui.aids.route) litWay(g, pts, now);
     /* the junctions: a diamond; the next one ahead shows the way it is set */
     MA.junctions = [];
-    const next = L.nextJunction(S);
+    const next = P.via.find(a => L.isJunction(a.n) && a.d > 0.05);
     for (const N of L.nodes) {
       if (!L.isJunction(N.i)) continue;
       const x = X(f, N.x), y = Y(f, N.y);
       MA.junctions.push({ n: N.i, x, y });
       if (N.kind === "jn") { K.poly(g, [[x, y - 4], [x + 4, y], [x, y + 4], [x - 4, y]], INK); K.poly(g, [[x, y - 3], [x + 3, y], [x, y + 3], [x - 3, y]], "#9b9284"); }
-      const showWay = next && next.n === N.i || (ui.aids.planner && ahead.some(a => a.k === "node" && a.n === N.i));
+      const showWay = next && next.n === N.i || (ui.aids.planner && P.via.some(a => a.n === N.i));
       if (showWay) {
-        const a = ahead.find(q => q.k === "node" && q.n === N.i), from = a ? a.from : -1;
+        const a = next && next.n === N.i ? next : P.via.find(q => q.n === N.i), from = a ? a.from : -1;
         if (from >= 0) {
           const ex = L.choose(N.i, from, S.pts[N.i]), O = L.nodes[L.other(ex, N.i)], d = Math.hypot(O.x - N.x, O.y - N.y);
           K.line(g, x, y, x + (O.x - N.x) / d * 14, y + (O.y - N.y) / d * 14, "#ffc35a", 3);
@@ -258,6 +272,7 @@
       const E0 = L.edges[e], A = L.nodes[E0.a], B = L.nodes[E0.b], t = c.at / E0.len;
       cross(g, X(f, A.x + (B.x - A.x) * t), Y(f, A.y + (B.y - A.y) * t), THEIRS);
     }
+    if (ui.aids.route) wayEnd(g, P, pts, now);
     /* the stations and their names, each where the layout put it; the rivers' and the countries' too */
     const lay = MA.layout(W, H, K.SCALE || 1, L.BRIDGES.filter(e => S.br[e].guarded)), taken = lay.taken.slice(), TASK = "#7fd28a";
     for (const r of L.RIVERS) { const a = lay.at["river:" + r.name]; if (a) K.text5(g, a.lines[0], a.x, a.y, "#4f7fa6"); }
