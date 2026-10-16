@@ -190,7 +190,9 @@
 
   /* what lies ahead, the way she is going (or facing), following the points as set, out to max miles.
      Each: { k: "node"|"bridge"|"cut"|"end"|"wolf", d: miles, n|e } */
-  L.ahead = (S, max = 30, dirOverride = 0) => {
+  /* what lies ahead, nearest first, as far as Port Clair: she is home there, so the way on past it is no
+   * one's route. Only the picture (pastFinal) looks on along the rails beyond. */
+  L.ahead = (S, max = 30, dirOverride = 0, pastFinal = false) => {
     const out = [], t = S.tr;
     let e = t.e, m = dirOverride || L.mdir(S), pos = t.d, run = 0;
     for (let guard = 0; guard < 40 && run <= max; guard++) {
@@ -204,6 +206,7 @@
       const N = L.nodes[n];
       out.push({ k: "node", d: run, n, from: e });
       if (N.kind === "wolf") { out.push({ k: "wolf", d: run, n }); break; }
+      if (N.final && !pastFinal) break;
       const nx = L.choose(n, e, S.pts[n] === undefined ? 1 : S.pts[n]);
       if (nx < 0) { out.push({ k: "end", d: run, n }); break; }
       m = L.edges[nx].a === n ? 1 : -1;
