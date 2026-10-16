@@ -467,24 +467,42 @@
         g.fillStyle = fogged("#2a2c33", l, z); g.fillRect(Math.round(b.x), Math.round(t.y), Math.max(1, Math.round(0.12 * b.s)), Math.max(1, Math.round(b.y - t.y)));
         if (l < 0.8) { const r = Math.max(1, Math.round(0.3 * t.s)); g.fillStyle = "rgba(255,214,140,.18)"; K.disc(g, t.x, t.y, r * 4, r * 4); g.fillStyle = "rgba(255,214,140,.3)"; K.disc(g, t.x, t.y, r * 2, r * 2); K.disc(g, t.x, t.y, r, r, "#ffe9b0"); }
       }
-      const bx0 = side * 9, z0 = o.z - 18, z1 = o.z + 18, Hh = 8.5;
-      if (z0 < 3) return;
-      const f0 = P(c, bx0, 0, z0), f1 = P(c, bx0, Hh, z0), r0 = P(c, bx0, 0, z1), r1 = P(c, bx0, Hh, z1);
+      /* the station house: a stone box nine deep under a gable roof, its near end toward us.
+         Alongside it, it is cut at the near plane rather than vanishing. */
+      const bx0 = side * 9, bk = side * 18, z0 = o.z - 18, z1 = o.z + 18, Hh = 8.5, zn = Math.max(3, z0);
+      if (z1 < 3) return;
+      const f0 = P(c, bx0, 0, zn), f1 = P(c, bx0, Hh, zn), r0 = P(c, bx0, 0, z1), r1 = P(c, bx0, Hh, z1);
       /* the long stone face toward the track, coursed */
       K.poly(g, [[f0.x, f0.y], [f1.x, f1.y], [r1.x, r1.y], [r0.x, r0.y]], fogged("#8c8272", l, o.z));
-      for (let k = 1; k < 8; k++) { const a = P(c, bx0, Hh * k / 8, z0), b = P(c, bx0, Hh * k / 8, z1); g.fillStyle = fogged("#6e6658", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
-      const rf = P(c, bx0 + side * 4.5, Hh + 4.5, z0), rr = P(c, bx0 + side * 4.5, Hh + 4.5, z1);
+      for (let k = 1; k < 8; k++) { const a = P(c, bx0, Hh * k / 8, zn), b = P(c, bx0, Hh * k / 8, z1); g.fillStyle = fogged("#6e6658", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
+      const rx = bx0 + side * 4.5, rf = P(c, rx, Hh + 4.5, zn), rr = P(c, rx, Hh + 4.5, z1);
       K.poly(g, [[f1.x, f1.y], [rf.x, rf.y], [rr.x, rr.y], [r1.x, r1.y]], fogged("#3a4150", l, o.z));
-      for (let k = 1; k < 6; k++) { const a = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, z0), b = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, z1); g.fillStyle = fogged("#2c323f", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
+      for (let k = 1; k < 6; k++) { const a = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, zn), b = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, z1); g.fillStyle = fogged("#2c323f", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
       /* windows: lit, warm; amber-red where the wolves are in */
+      const lit = i => l < 0.7 ? (o.held ? (i % 3 ? "#ff9a5a" : "#3a2a24") : (i % 4 ? "#ffcf6a" : "#2a3040")) : "#2a3040";
       for (let i = 0; i < 7; i++) for (const yy of [1.6, 5]) {
-        const zw = z0 + 3 + i * 4.6, a = P(c, bx0, yy, zw), b = P(c, bx0, yy + 2.4, zw + 2);
-        g.fillStyle = l < 0.7 ? (o.held ? (i % 3 ? "#ff9a5a" : "#3a2a24") : (i % 4 ? "#ffcf6a" : "#2a3040")) : "#2a3040";
+        const zw = z0 + 3 + i * 4.6; if (zw < 3) continue;
+        const a = P(c, bx0, yy, zw), b = P(c, bx0, yy + 2.4, zw + 2);
+        g.fillStyle = lit(i);
         g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(b.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(a.y - b.y)));
       }
       if (o.held) for (const zz of [z0 + 9, z0 + 27]) {
+        if (zz < 3) continue;
         const a = P(c, bx0, Hh - 0.3, zz), b = P(c, bx0, Hh - 4.5, zz + 2.6);
         g.fillStyle = "#b52c1b"; g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(a.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(b.y - a.y)));
+      }
+      /* the near gable end, in shadow: coursed stone, the verge of the roof, two windows up and down */
+      if (z0 >= 3) {
+        const e3 = P(c, bk, Hh, z0), e4 = P(c, bk, 0, z0);
+        K.poly(g, [[f0.x, f0.y], [f1.x, f1.y], [rf.x, rf.y], [e3.x, e3.y], [e4.x, e4.y]], fogged("#756c5e", l, o.z));
+        for (let k = 1; k < 8; k++) { const a = P(c, bx0, Hh * k / 8, z0), b = P(c, bk, Hh * k / 8, z0); g.fillStyle = fogged("#5c5549", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
+        for (const yy of [1.6, 5]) {
+          const a = P(c, bx0 + side * 3.6, yy, z0), b = P(c, bx0 + side * 5.4, yy + 2.4, z0);
+          g.fillStyle = lit(yy > 3 ? 1 : 2);
+          g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(b.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(a.y - b.y)));
+        }
+        const vw = Math.max(1, Math.round(0.3 * f1.s));
+        K.line(g, f1.x, f1.y, rf.x, rf.y, fogged("#262b36", l, o.z), vw); K.line(g, rf.x, rf.y, e3.x, e3.y, fogged("#262b36", l, o.z), vw);
       }
       /* the name board on its posts, once it can be read */
       const nb = P(c, side * 3.4, 3.2, o.z - 34);
