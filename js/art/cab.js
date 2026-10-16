@@ -54,11 +54,8 @@
       valve: { x: X(74), y: Y(18), w: Math.round(40 * u), h: Y(152) - Y(18), cx: X(94), cy: Y(138) },
       shovel: { x: X(250), y: Y(306), w: Math.round(80 * u), h: H - Y(306), cx: X(290), cy: Y(334) },
     };
-    /* the hand lantern on its hook by the fireman, swinging as she rides */
-    Lo.lantern = { x: X(56), y: Y(30), len: Math.round(28 * sy), w: Math.max(9, Math.round(12 * u)), h: Math.max(18, Math.round(24 * u)) };
-    /* the lamps: the gauge lamp over the manifold, the oil lamp by the driver, the manifold's lamp, the lantern at rest */
-    Lo.lamps = [{ x: X(412), y: Y(158), r: 170 * u, k: 0.9, col: [1.0, 0.78, 0.48] }, { x: X(600), y: Y(40), r: 230 * u, k: 0.55, col: [1.0, 0.8, 0.5] }, { x: X(129), y: Y(168), r: 120 * u, k: 0.45, col: [1.0, 0.78, 0.5] },
-      { x: Lo.lantern.x, y: Lo.lantern.y + Lo.lantern.len + Math.round(Lo.lantern.h * 0.5), r: 110 * u, k: 0.4, col: [1.0, 0.8, 0.5] }];
+    /* the lamps: the gauge lamp over the manifold, the oil lamp by the driver, the fire */
+    Lo.lamps = [{ x: X(412), y: Y(158), r: 170 * u, k: 0.9, col: [1.0, 0.78, 0.48] }, { x: X(600), y: Y(40), r: 230 * u, k: 0.55, col: [1.0, 0.8, 0.5] }, { x: X(129), y: Y(168), r: 120 * u, k: 0.45, col: [1.0, 0.78, 0.5] }];
     Lo.fire = { x: X(128), y: Y(322), rx: 330 * u, ry: 260 * sy, k: 1.5, col: [1.0, 0.55, 0.22] };
     Lo.amb = [0.3, 0.33, 0.44];
     return Lo;
@@ -338,10 +335,29 @@
       K.rect(g, kx - 12, cy0 - 5, 24, 9, INK); K.rect(g, kx - 11, cy0 - 4, 22, 7, M.brass[2]); K.rect(g, kx - 11, cy0 - 4, 22, 2, M.brass[0]); K.rect(g, kx - 11, cy0 + 2, 22, 1, M.brass[3]);
       K.rivet(g, kx - 1, cy0 - 1, M.brass[0], M.brass[4]);
     }
-    /* the lantern's hook: a little iron bracket bolted to the plate (the lantern itself swings, drawn each frame) */
-    { const hx = Lo.lantern.x, hy = Lo.lantern.y;
-      K.rect(g, hx - 4, hy - 6, 9, 5, INK); K.rect(g, hx - 3, hy - 5, 7, 3, M.steel[1]); K.rivet(g, hx - 3, hy - 5, M.steel[0], INK); K.rivet(g, hx + 2, hy - 5, M.steel[0], INK);
-      K.rect(g, hx, hy - 2, 1, 3, M.steel[2]); }
+    /* the fire extinguisher on its bracket: a red cylinder, brass head and plunger, its hose looped down */
+    { const ex = X(52), ey = Y(54), ew = Math.max(10, Math.round(14 * u)), eh = 54;
+      K.rect(g, ex - 3, ey - 2, ew + 6, eh + 8, "rgba(0,0,0,.35)");
+      for (let y = ey; y < ey + eh; y++) for (let x = ex; x < ex + ew; x++) {
+        const k = (x - ex) / (ew - 1), lv = Math.cos((k - 0.32) * Math.PI) + K.bayer(x, y) * 0.25 - (y - ey) / eh * 0.25;
+        g.fillStyle = ["#ff8a6a", "#e2402a", "#b52c1b", "#7d1c11", "#4c100a"][PX.clamp(Math.round(3 - lv * 2.4), 0, 4)]; g.fillRect(x, y, 1, 1);
+      }
+      for (let x = ex; x < ex + ew; x++) { K.px(g, x, ey, INK); K.px(g, x, ey + eh, INK); }
+      /* a rounded shoulder and base */
+      K.rect(g, ex + 1, ey - 3, ew - 2, 3, "#b52c1b"); K.rect(g, ex + 2, ey - 4, ew - 4, 1, "#e2402a");
+      /* the label band */
+      K.rect(g, ex, ey + 18, ew, 12, "#e9e0c4"); K.rect(g, ex, ey + 18, ew, 1, "#b8ac8c"); K.rect(g, ex, ey + 29, ew, 1, "#b8ac8c");
+      K.text3(g, "F", ex + Math.round(ew / 2) - 1, ey + 21, "#7a1f14");
+      /* the brass head and the plunger knob */
+      boss(g, ex + Math.round(ew / 2), ey - 7, 4, M.brass);
+      K.rect(g, ex + Math.round(ew / 2) - 1, ey - 14, 3, 6, M.brass[2]); boss(g, ex + Math.round(ew / 2), ey - 15, 2, M.brass);
+      /* the hose from the head, looped and clipped */
+      K.line(g, ex + ew - 1, ey - 6, ex + ew + 5, ey + 8, INK, 3); K.line(g, ex + ew + 5, ey + 8, ex + ew + 4, ey + 34, INK, 3); K.line(g, ex + ew + 4, ey + 34, ex + ew - 1, ey + 40, INK, 3);
+      K.line(g, ex + ew - 1, ey - 6, ex + ew + 5, ey + 8, "#2e2a26", 1); K.line(g, ex + ew + 5, ey + 8, ex + ew + 4, ey + 34, "#2e2a26", 1);
+      K.rect(g, ex + ew - 2, ey + 39, 4, 4, M.brass[2]);
+      /* the bracket's two straps, bolted to the plate */
+      for (const sy2 of [ey + 8, ey + eh - 10]) { K.rect(g, ex - 3, sy2, ew + 6, 4, INK); K.rect(g, ex - 2, sy2 + 1, ew + 4, 2, M.steel[1]); K.rivet(g, ex - 2, sy2 + 1, M.steel[0], INK); K.rivet(g, ex + ew, sy2 + 1, M.steel[0], INK); }
+    }
     /* grab rails on the plate's outer edges */
     for (const x of [X(8), X(626)]) { K.rect(g, x, wy0 + 24, 3, winH - wy0 - 40, M.brass[2]); K.rect(g, x, wy0 + 24, 1, winH - wy0 - 40, M.brass[0]); }
     /* the oil lamp by the driver: brass, its glass lit */
@@ -703,79 +719,6 @@
     return cam;
   };
 
-  /* ---- riding: the cab rocks as she runs, more the faster she goes ----
-   * Seen from the footplate the boiler shifts in the window: the whole of it heaves a pixel or two at the
-   * rail joints, and its far end swings side to side further than its near end, the engine flexing on its
-   * springs. The lantern on its hook swings with the rocking, a damped pendulum. All of it runs on the
-   * night's own clock, so it stands still while the game is paused, and only with screen shake on. */
-  const ride = { steps: -1, th: 0, om: 0 };
-  const TAU = Math.PI * 2, SWAY = [[0.62, 1, 0], [0.27, 0.6, 1.3], [1.7, 0.3, 0.4]];
-  const rideAmp = S => PX.prefs && PX.prefs.shake ? PX.clamp(Math.abs(S.tr.v) / 60, 0, 1.3) : 0;
-  /* the cab's side-to-side, metres, and its acceleration */
-  const sway = (a, t) => { let x = 0, acc = 0; for (const [f, k, ph] of SWAY) { const w = TAU * f, q = Math.sin(w * t + ph) * k * 0.03 * a; x += q; acc -= q * w * w; } return [x, acc]; };
-  function riding(S) {
-    const a = rideAmp(S), t = S.steps * 0.02;
-    /* the lantern: integrate the pendulum over the steps since the last frame */
-    const n = S.steps - ride.steps;
-    if (ride.steps < 0 || n < 0 || n > 250) { ride.th = 0; ride.om = 0; }
-    else for (let i = n - 1; i >= 0; i--) {
-      const acc = sway(a, t - i * 0.02)[1], LEN = 0.5;
-      ride.om += (-9.81 / LEN * Math.sin(ride.th) - 0.7 * ride.om - acc / LEN * Math.cos(ride.th)) * 0.02;
-      ride.th = PX.clamp(ride.th + ride.om * 0.02, -0.7, 0.7);
-    }
-    ride.steps = S.steps;
-    /* the boiler: the far end swings with the sway, the whole heaves at each rail joint (60 ft rails) */
-    const lat = sway(a, t)[0], joint = S.odo * 1609.34 / 18.3, ph = joint - Math.floor(joint);
-    const heave = a ? PX.clamp(Math.round(a * (1.5 * Math.exp(-ph * 9) - 0.35 + 0.6 * Math.sin(TAU * 1.3 * t))), -2, 2) : 0;
-    return { far: lat * 90, near: lat * 22, heave };
-  }
-  /* the boiler sprite drawn in strips, each row shifted by how far along the barrel it shows */
-  function drawBoiler(g, bo, Lo, r) {
-    const top = Math.max(0, Math.floor(bo.pts.chimney.y) - 4), bot = Lo.winH;
-    const dxAt = y => Math.round(r.near + (r.far - r.near) * PX.clamp((bot - y) / Math.max(1, bot - top), 0, 1));
-    let y0 = 0, d0 = dxAt(0);
-    for (let y = 1; y <= bot; y++) {
-      const d = y < bot ? dxAt(y) : NaN;
-      if (d === d0) continue;
-      g.drawImage(bo, 0, y0, Lo.W, y - y0, d0, y0 + r.heave, Lo.W, y - y0);
-      y0 = y; d0 = d;
-    }
-    const at = p => ({ x: p.x + dxAt(p.y), y: p.y + r.heave });
-    Cab.chimney = at(bo.pts.chimney); Cab.valveTop = at(bo.pts.valve); Cab.whistleTop = at(bo.pts.whistle); Cab.domeTop = at(bo.pts.dome);
-  }
-  /* the hand lantern: a brass cap and base, a lit glass between wire guards */
-  const lanternSprite = Lo => K.get(`lantern:${Lo.lantern.w}x${Lo.lantern.h}`, () => {
-    const { w, h } = Lo.lantern, c = K.mk(w, h), g = c.getContext("2d"), cap = Math.round(h * 0.24), base = Math.round(h * 0.2), gl = h - cap - base;
-    const B = M.brass;
-    /* the ring and the cap, a cone */
-    K.rect(g, Math.floor(w / 2) - 1, 0, 3, 2, B[3]); K.px(g, Math.floor(w / 2), 0, B[4]);
-    for (let y = 2; y < cap; y++) { const hw = Math.round(1.5 + (y - 2) / Math.max(1, cap - 3) * (w / 2 - 1.5)); for (let x = Math.floor(w / 2) - hw; x < Math.floor(w / 2) + hw; x++) K.px(g, x, y, B[PX.clamp(Math.round(1 + (x - w / 2) / (w / 2) * 1.6 + K.bayer(x, y) * 0.6), 0, 4)]); }
-    /* the glass, the flame's glow in it */
-    for (let y = cap; y < cap + gl; y++) for (let x = 1; x < w - 1; x++) {
-      const dx = (x - (w - 1) / 2) / ((w - 2) / 2), dy = (y - cap - gl * 0.55) / (gl / 2), q = dx * dx + dy * dy * 0.7 + K.bayer(x, y) * 0.15;
-      K.px(g, x, y, q < 0.12 ? "#fffbe6" : q < 0.35 ? "#ffe9a8" : q < 0.7 ? "#ffcf6a" : "#e09a44");
-    }
-    /* the wire guards, up the glass */
-    for (const f of [0.28, 0.72]) K.rect(g, Math.round((w - 1) * f), cap, 1, gl, "#3a2a1a");
-    K.rect(g, 1, cap + Math.round(gl * 0.5), w - 2, 1, "rgba(58,42,26,.6)");
-    /* the base, a drum */
-    for (let y = cap + gl; y < h; y++) for (let x = 0; x < w; x++) K.px(g, x, y, B[PX.clamp(Math.round(1.2 + (x - w / 2) / (w / 2) * 1.6 + (y - cap - gl) / base + K.bayer(x, y) * 0.5), 0, 4)]);
-    K.rect(g, 0, cap + gl, w, 1, B[0]); K.rect(g, 0, h - 1, w, 1, B[4]);
-    return c;
-  });
-  function drawLantern(g, Lo, th, day) {
-    const L0 = Lo.lantern, spr = lanternSprite(Lo), sh = K.get(`lanternSh:${L0.w}x${L0.h}`, () => K.silhouette(spr, "rgba(0,0,0,.35)"));
-    const bx = L0.x + Math.sin(th) * L0.len, by = L0.y + Math.cos(th) * L0.len, x = Math.round(bx - L0.w / 2), y = Math.round(by);
-    /* its warm light on the plate, moving with it */
-    const gx = bx, gy = by + L0.h * 0.55, r = L0.h * 2.2, grd = g.createRadialGradient(gx, gy, 1, gx, gy, r);
-    grd.addColorStop(0, `rgba(255,200,110,${(0.22 * (1 - day * 0.7)).toFixed(3)})`); grd.addColorStop(1, "rgba(255,200,110,0)");
-    g.fillStyle = grd; g.fillRect(gx - r, gy - r, r * 2, r * 2);
-    /* the bail from the hook, the shadow on the plate, the lantern */
-    g.drawImage(sh, x + 3, y + 2);
-    K.line(g, L0.x, L0.y, bx, by + 1, INK, 2); K.line(g, L0.x, L0.y, bx, by + 1, M.steel[1]);
-    g.drawImage(spr, x, y);
-  }
-
   /* ---- a frame ---- */
   Cab.draw = (g, S, ui, now, fx) => {
     const W = g.canvas.width, H0 = g.canvas.height, Lo = Cab.layout(W, H0);
@@ -788,8 +731,9 @@
     World.sky(g, S, wc, now);
     World.hills(g, S, wc);
     World.ground(g, S, wc, now);
-    const bo = K.get(`boiler:${W}x${H0}`, () => paintBoiler(Lo, cam)), r = riding(S);
-    drawBoiler(g, bo, Lo, r);
+    const bo = K.get(`boiler:${W}x${H0}`, () => paintBoiler(Lo, cam));
+    g.drawImage(bo, 0, 0);
+    Cab.chimney = bo.pts.chimney; Cab.valveTop = bo.pts.valve; Cab.whistleTop = bo.pts.whistle; Cab.domeTop = bo.pts.dome;
     if (fx) fx(g, cam);
     g.drawImage(glass(Lo), 0, 0);
     /* steam: the safety valves blowing off, the whistle */
@@ -802,7 +746,6 @@
     g.globalAlpha = PX.clamp(fireLvl, 0, 1);
     g.drawImage(K.get(`cab:${W}x${H0}:1:${day}`, () => paintCab(Lo, true)), 0, 0);
     g.globalAlpha = 1;
-    drawLantern(g, Lo, ride.th, day);
     moving(g, S, Lo, now);
     if (ui.cursor) cursor(g, Lo, ui.cursor, now);
     /* a hurt boiler weeps steam at its joints */

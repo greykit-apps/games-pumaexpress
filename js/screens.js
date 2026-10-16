@@ -289,7 +289,7 @@
         <table class="aids">${PX.AID_LIST.map(([k, n, note]) => `<tr><td><b>${esc(n)}</b><br><span class="note">${esc(note)}</span></td><td class="act">${sw(k, n)}</td></tr>`).join("")}</table></details>
         <h3>Look</h3>
         <table class="aids">${line("Scanlines", "Fine dark lines over the picture, like an old television.", toggle("scan", PX.prefs.scanlines, "Scanlines"))}
-        ${line("Screen shake", "The screen jolts with hits and explosions, and the cab rocks as she runs." + (PX.calm() ? " Off to begin with, as this computer asks for less motion." : ""), toggle("shake", PX.prefs.shake, "Screen shake"))}</table>
+        ${line("Screen shake", "The screen jolts with hits and explosions." + (PX.calm() ? " Off to begin with, as this computer asks for less motion." : ""), toggle("shake", PX.prefs.shake, "Screen shake"))}</table>
         <h3>Sound</h3>
         <table class="aids">${line("Sound", "The engine, the whistle, the guns and the cannon; the tune on the title. <kbd>M</kbd> switches it anywhere.", toggle("mute", !PX.SFX.muted, "Sound"))}</table>
         <h3>Game speed</h3>
