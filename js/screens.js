@@ -349,8 +349,8 @@
       <p class="note">Gamepad: the stick or pad picks, works and aims; A uses and fires; B whistles; the bumpers change view; Back is the map, Start pauses.</p>`],
   ];
   UI.help = (tab = 0, after) => UI.open("Help", { wide: true, tab, tabs: UI.helpTabs(), onClose: after });
-  UI.aboutHTML = () => `<p><b>The Puma Express</b> is a heavily modified remake of <i>The Train: Escape to Normandy</i> (Accolade, 1987) for the Commodore 64: steal back a train of looted art and run it across occupied country to the coast before dawn, driving the engine by hand and fighting for every station and bridge on the way.</p>
-    <p>The resistance are pumas here, and the occupiers the Wolf Empire. The line, the towns and the numbers are our own; the shape of the night is 1987's.</p>
+  UI.aboutHTML = () => `<p>Steal a train full of looted art and run it across occupied territory. Coordinate with the Resistance and fight your way to the coast before dawn.</p>
+    <p>Accolade's <i>The Train: Escape to Normandy</i> (1987) was one of my favorite games for the Commodore 64. It plays like a boardgame and is AFAIK the first Train Simulator. My interpretation of it includes many field assistance for modern players that make the game much easier, but I think I kept the spirit intact.</p>
     <p class="gk-credit">${CREDIT}</p>`;
   UI.about = after => UI.open("About", { html: UI.aboutHTML, onClose: after });
 })();
