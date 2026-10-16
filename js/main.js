@@ -69,7 +69,7 @@
         <nav class="pe-menu" aria-label="Main menu">
           <header class="tt-head" aria-hidden="true"><p class="tt-co">Resistance · operation orders</p><p class="tt-svc">The train at Velmont</p><span class="tt-secret">Most secret</span></header>
           <div class="od" aria-hidden="true"><p><b>1. Situation.</b> The wolves have loaded forty-eight paintings onto a train in the yards at Velmont, bound for the Empire.</p>
-            <p><b>2. Object.</b> Seize the train. Run it west to Port Clair, on the free coast, before dawn.</p><p class="od-h"><b>3. Method.</b></p></div>
+            <p><b>2. Object.</b> Seize the train. Get it to Port Clair before dawn. Send Resistance orders from stations. Godspeed.</p><p class="od-h"><b>3. Method.</b></p></div>
           ${main.map(it => btn(it, true)).join("")}
           <p class="od-h adm" aria-hidden="true"><b>4. Administration.</b></p><div class="util">${util.map(it => btn(it, false)).join("")}</div>
           <p class="tt-foot" aria-hidden="true"><span>For the Resistance. Burn after reading.</span>${PAW}</p>
