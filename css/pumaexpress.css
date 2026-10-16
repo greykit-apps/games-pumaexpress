@@ -375,16 +375,21 @@ img.fig { display: inline-block; vertical-align: middle; }
 #h-status .h-paint { font-size: 16px; }
 #hud .h-views { top: 4px; left: 236px; transform: none; padding: 2px; background: transparent; border: 0; z-index: 3; }
 #hud .h-views button { padding: 4px 10px 4px 6px; font-size: 14px; }
-/* hung from the bar's foot, so it keeps above the cab's window rather than over it */
-#hud #h-ahead { top: 34px; left: 50%; right: auto; transform: translateX(-50%); width: auto; padding: 3px 12px 4px; border-top: 0; border-radius: 0 0 6px 6px; }
-#hud #h-ahead .ha-rows { display: flex; gap: 16px; }
-#hud #h-ahead .ha-row { display: flex; align-items: baseline; gap: 6px; padding: 0; white-space: nowrap; }
-#hud #h-ahead .ha-row .ha-n { font-size: 14px; }
-#hud #h-ahead .ha-row .ha-v { font-size: 13px; }
-#hud #h-ahead .ha-row + .ha-row { padding-left: 16px; border-left: 1px solid var(--pe-hair); }
-#hud .h-fast { top: 78px; }
+/* hung from the bar's foot, square-topped, so it keeps as far above the cab's window as it can */
+#hud #h-ahead { top: 34px; left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 28px); box-sizing: border-box; padding: 6px 18px 7px; border-top: 0; border-radius: 0 0 6px 6px; }
+#hud #h-ahead .ha-rows { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 22px; }
+/* a crowded line ahead takes a second line rather than running off the screen */
+#hud #h-ahead .ha-row { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 0; white-space: nowrap; }
+#hud #h-ahead .ha-row .ha-n { min-width: 0; }
+#hud #h-ahead .ha-row .lbl, #hud #h-ahead .ha-row .ha-v { flex: none; }
+#hud #h-ahead .ha-row .lbl { font-size: 13px; }
+#hud #h-ahead .ha-row .ha-n { font-size: 19px; }
+#hud #h-ahead .ha-row .ha-v { font-size: 17px; }
+#hud #h-ahead .ha-row + .ha-row { padding-left: 22px; border-left: 1px solid var(--pe-hair); }
+#hud .h-fast { top: 92px; }
 #hud .h-mapside { top: 52px; bottom: auto; max-height: calc(100% - 116px); }
 /* folded by the width the grown HUD has (main.js sets these classes), not the window's */
 .hud-w1300 #h-status .h-row[data-p] > .lbl { display: none; }
 .hud-w1160 #hud .h-views button { font-size: 0; gap: 0; padding: 4px; }
 .hud-w1100 .hs-left .h-dawn, .hud-w1100 #hud #h-ahead .ha-row .lbl { display: none; }
+@media (max-width: 1000px) { #hud #h-ahead { padding: 6px 14px; } #hud #h-ahead .ha-rows { column-gap: 16px; } #hud #h-ahead .ha-row + .ha-row { padding-left: 16px; } #hud #h-ahead .ha-row .ha-n { font-size: 17px; } #hud #h-ahead .ha-row .ha-v { font-size: 15px; } }

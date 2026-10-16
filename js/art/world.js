@@ -26,9 +26,50 @@
     const f = o.f || vp.h * 1.05, hor = vp.y + Math.round(vp.h * o.hor), cx = vp.x + Math.round(vp.w * (o.cx || 0.5));
     return Object.assign({}, o, { f, hor, cx, vp });
   };
-  const P = (c, X, Y, Z) => ({ x: c.cx + (X - c.x) * c.f / Z, y: c.hor - (Y - c.h) * c.f / Z, s: c.f / Z });
+  const P = (c, X, Y, Z) => ({ x: c.cx + bend(c, Z) + (X - c.x) * c.f / Z, y: c.hor - (Y - c.h) * c.f / Z, s: c.f / Z });
   W.P = P;
   const lb = l => Math.round(l * 8) / 8;
+
+  /* ---- the swing through a set of points ----
+   * The picture always runs the line dead ahead, so a turnout taken is shown as the view swinging
+   * toward it and back: her heading eases toward the diverging road as she runs up to the points,
+   * is fullest just through them, and comes back as she settles onto the new line. The sky and the
+   * hills slide the whole way; the ground and what stands on it bend into it with distance, the
+   * line under her staying under her, so the road she is leaving peels away to the other side.
+   * The boiler, the guns, the sight and the fighters are all in the train's own frame, so they stay
+   * where they are and the aiming is untouched. It is drawn from where she is and how the points
+   * lie, eased so a change of the points or of the view never jumps; the engine never sees it. */
+  const YAW = 0.1, YAW_IN = 140, YAW_PEAK = 40, YAW_OUT = 420, YAW_EASE = 0.25, BEND = 60;
+  const smooth = (a, b, x) => { const t = PX.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const swing = { n: -1, e: -1, sd: 0, yaw: 0, last: 0 };
+  /* the heading she is swinging to, radians off the line, + to the right of the way she is going;
+     s is picture metres past the points (less than 0 short of them) */
+  const swingAt = s => s < YAW_PEAK ? smooth(-YAW_IN, YAW_PEAK, s) : 1 - smooth(YAW_PEAK, YAW_OUT, s);
+  function heading(S) {
+    const t = S.tr, E = L.edges[t.e], m = L.mdir(S);
+    const next = L.ahead(S, (YAW_IN + 10) / W.VM, m).find(a => a.k === "node");
+    if (next && L.isJunction(next.n)) {
+      /* the side DRAW.points lights: ways[0] curves off to the left, ways[2] to the right */
+      const ways = L.ways(next.n, next.from), set = ways[S.pts[next.n] === undefined ? 1 : S.pts[next.n]];
+      swing.n = next.n; swing.e = set; swing.sd = set === ways[1] ? 0 : set === ways[0] ? -1 : 1;
+      return swing.sd * YAW * swingAt(-next.d * W.VM);
+    }
+    /* through them: on the road the points sent her, the junction behind her */
+    if (swing.sd && t.e === swing.e && (m > 0 ? E.a : E.b) === swing.n) return swing.sd * YAW * swingAt((m > 0 ? t.d : E.len - t.d) * W.VM);
+    return 0;
+  }
+  /* the camera c, turned: a yaw this small is the sky slid sideways by pan = f tan(yaw), and pad is
+     the most it can slide, for the sky and the hills to be drawn wider by */
+  W.turned = (S, c, now) => {
+    const dt = PX.clamp((now - swing.last) / 1000, 0, 0.05);
+    swing.last = now;
+    swing.yaw += (heading(S) - swing.yaw) * (1 - Math.exp(-dt / YAW_EASE));
+    const pad = Math.ceil(c.f * Math.tan(YAW)) + 2, pan = PX.clamp(Math.round(-Math.tan(swing.yaw) * c.f), -pad, pad);
+    return Object.assign({}, c, { pan, pad });
+  };
+  /* how far the ground slides at depth Z: the line under her curving off to the sky's heading by
+     BEND metres out, as a turnout's rails do (nothing at her, half at BEND, all of it at the horizon) */
+  const bend = (c, Z) => c.pan ? c.pan * (Z < BEND ? Z / (2 * BEND) : 1 - BEND / (2 * Z)) : 0;
 
   /* the light on the land: moonlight, cold and blue, warming toward day */
   const ambient = l => l <= 0 ? [0.34, 0.4, 0.56] : l < 0.55 ? [0.34 + l * 0.5, 0.4 + l * 0.3, 0.56 + l * 0.05] : [0.62 + (l - 0.55) * 0.85, 0.57 + (l - 0.55) * 0.95, 0.59 + (l - 0.55) * 0.92];
@@ -38,10 +79,11 @@
 
   /* ---- the sky ---- */
   const MOON_DIR = look => look > 0 ? 0.8 : 0.2;
-  function skyCanvas(w, h, l, look) {
-    return K.get(`sky:${w}x${h}:${lb(l)}:${look}`, () => {
-      const c = K.mk(w, h), g = c.getContext("2d"), img = g.createImageData(w, h), d = img.data;
-      const cols = K.sky(l).map(rgb), mx = w * MOON_DIR(look), my = h * 0.3;
+  /* w wide as seen, with pad more either side for the view to swing into (see W.turned) */
+  function skyCanvas(w0, h, l, look, pad = 0) {
+    return K.get(`sky:${w0}x${h}:${lb(l)}:${look}${pad ? `:${pad}` : ""}`, () => {
+      const w = w0 + pad * 2, c = K.mk(w, h), g = c.getContext("2d"), img = g.createImageData(w, h), d = img.data;
+      const cols = K.sky(l).map(rgb), mx = pad + w0 * MOON_DIR(look), my = h * 0.3;
       for (let y = 0; y < h; y++) {
         const t = Math.pow(y / Math.max(1, h - 1), 1.25) * 4, i = Math.min(3, Math.floor(t)), f = t - i;
         for (let x = 0; x < w; x++) {
@@ -51,9 +93,9 @@
           const dm = Math.hypot(x - mx, (y - my) * 1.2), glow = Math.max(0, 1 - dm / 130) * (1 - l) * 34;
           r += glow * 0.8; gg += glow * 0.85; b += glow;
           /* cloud: long thin banks, edged with moonlight on the side toward it */
-          const cn = K.fbm2(x / 110 + 3, y / 14, 7 + look) - 0.5 - (y / h) * 0.05;
+          const cn = K.fbm2((x - pad) / 110 + 3, y / 14, 7 + look) - 0.5 - (y / h) * 0.05;
           if (cn > 0) {
-            const dens = Math.min(1, cn * 4.5), edge = cn < 0.08 ? 1 : 0, lit = Math.max(0, 1 - Math.abs(x - mx) / (w * 0.7));
+            const dens = Math.min(1, cn * 4.5), edge = cn < 0.08 ? 1 : 0, lit = Math.max(0, 1 - Math.abs(x - mx) / (w0 * 0.7));
             const cr = PX.lerp(r, 34 + l * 120, dens * 0.8) + edge * lit * 38 * (1 - l * 0.5);
             const cg = PX.lerp(gg, 40 + l * 110, dens * 0.8) + edge * lit * 40 * (1 - l * 0.5);
             const cb = PX.lerp(b, 62 + l * 100, dens * 0.8) + edge * lit * 46 * (1 - l * 0.5);
@@ -67,7 +109,7 @@
         const n = Math.round(w * h / 90);
         for (let i = 0; i < n; i++) {
           const x = Math.floor(K.hash(i, 1, 77) * w), y = Math.floor(Math.pow(K.hash(i, 2, 77), 1.4) * (h - 4));
-          if (K.fbm2(x / 110 + 3, y / 14, 7 + look) - 0.5 > -0.03) continue;
+          if (K.fbm2((x - pad) / 110 + 3, y / 14, 7 + look) - 0.5 > -0.03) continue;
           const b = K.hash(i, 3, 77) * (1 - l * 1.6); if (b < 0.12) continue;
           const v = 90 + b * 165, o = (y * w + x) * 4, tint = K.hash(i, 4, 77);
           d[o] = Math.max(d[o], v * (tint > 0.8 ? 1 : 0.85)); d[o + 1] = Math.max(d[o + 1], v * 0.92); d[o + 2] = Math.max(d[o + 2], v * (tint < 0.3 ? 0.8 : 1));
@@ -106,28 +148,29 @@
   });
 
   W.sky = (g, S, c, now) => {
-    const vp = c.vp, l = K.light(S.t), h = c.hor - vp.y + 1;
-    g.drawImage(skyCanvas(vp.w, h, l, c.look), vp.x, vp.y);
+    const vp = c.vp, l = K.light(S.t), h = c.hor - vp.y + 1, pad = c.pad || 0, pan = c.pan || 0;
+    g.drawImage(skyCanvas(vp.w, h, l, c.look, pad), pad - pan, 0, vp.w, h, vp.x, vp.y, vp.w, h);
     /* a few stars breathe */
     if (l < 0.5) for (let i = 0; i < 14; i++) {
       if (K.hash(i, Math.floor(now / 300), 6) < 0.6) continue;
-      const x = vp.x + Math.floor(K.hash(i, 1, 91) * vp.w), y = vp.y + Math.floor(K.hash(i, 2, 91) * h * 0.8);
+      const x = vp.x + pan - pad + Math.floor(K.hash(i, 1, 91) * (vp.w + pad * 2)), y = vp.y + Math.floor(K.hash(i, 2, 91) * h * 0.8);
+      if (x < vp.x || x >= vp.x + vp.w) continue;
       g.fillStyle = "rgba(255,248,225,.55)"; g.fillRect(x, y, 1, 1);
     }
   };
 
   /* ---- the hills on the horizon, three distances, for this stretch of line ---- */
   W.hills = (g, S, c) => {
-    const vp = c.vp, l = K.light(S.t), seed = S.tr.e * 13 + (c.look > 0 ? 0 : 5);
-    const can = K.get(`hills:${vp.w}:${seed}:${lb(l)}:${c.look}`, () => {
-      const H = 44, o = K.mk(vp.w, H), og = o.getContext("2d"), A = ambient(l), hz = haze(l);
+    const vp = c.vp, l = K.light(S.t), seed = S.tr.e * 13 + (c.look > 0 ? 0 : 5), pad = c.pad || 0, pan = c.pan || 0;
+    const can = K.get(`hills:${vp.w}:${seed}:${lb(l)}:${c.look}${pad ? `:${pad}` : ""}`, () => {
+      const H = 44, o = K.mk(vp.w + pad * 2, H), og = o.getContext("2d"), A = ambient(l), hz = haze(l);
       const tone = (hex, fog) => { const q = rgb(hex); return K.hex(q.map((v, i) => PX.lerp(v * A[i], hz[i], fog))); };
       const far = tone("#56637e", 0.55), farLit = tone("#7d8aa6", 0.45), mid = tone("#2f3d48", 0.32), midLit = tone("#4b5f66", 0.28), near = tone("#1b2a26", 0.12), nearLit = tone("#33463d", 0.1);
-      for (let x = 0; x < vp.w; x++) {
-        const u = x / 70;
+      for (let x = 0; x < vp.w + pad * 2; x++) {
+        const xv = x - pad, u = xv / 70;
         const h1 = Math.round(10 + K.fbm(u * 0.5, seed) * 26), h2 = Math.round(5 + K.fbm(u * 1.2 + 40, seed + 3) * 12);
         /* the near line: hedges and copses, a crown here and there */
-        const crown = K.hash(Math.floor(x / 7), 3, seed) > 0.55 ? Math.round(3 + 4 * Math.sin((x % 7) / 7 * Math.PI)) : 0;
+        const crown = K.hash(Math.floor(xv / 7), 3, seed) > 0.55 ? Math.round(3 + 4 * Math.sin(((xv % 7) + 7) % 7 / 7 * Math.PI)) : 0;
         const h3 = Math.round(2 + K.fbm(u * 3 + 9, seed + 6) * 4) + crown;
         og.fillStyle = far; og.fillRect(x, H - h1, 1, h1); og.fillStyle = farLit; og.fillRect(x, H - h1, 1, 1);
         og.fillStyle = mid; og.fillRect(x, H - h2, 1, h2); og.fillStyle = midLit; og.fillRect(x, H - h2, 1, 1);
@@ -135,13 +178,13 @@
       }
       /* a village far off: a spire, a few lit windows */
       if (K.hash(seed, 1, 5) > 0.4) {
-        const vx = Math.round(vp.w * (0.15 + K.hash(seed, 2, 5) * 0.7));
+        const vx = pad + Math.round(vp.w * (0.15 + K.hash(seed, 2, 5) * 0.7));
         og.fillStyle = mid; og.fillRect(vx, H - 18, 2, 12); og.fillRect(vx - 1, H - 10, 4, 4); og.fillRect(vx - 6, H - 9, 14, 4);
         if (l < 0.6) for (let i = 0; i < 4; i++) { og.fillStyle = K.hash(i, seed, 4) > 0.5 ? "#ffcf6a" : "#e89a4a"; og.fillRect(vx - 6 + Math.round(K.hash(i, seed, 9) * 14), H - 7 + Math.round(K.hash(i, seed, 8) * 2), 1, 1); }
       }
       return o;
     });
-    g.drawImage(can, vp.x, c.hor - 43);
+    g.drawImage(can, pad - pan, 0, vp.w, 44, vp.x, c.hor - 43, vp.w, 44);
   };
 
   /* what is on the line, in picture metres, along the way the camera looks */
@@ -181,11 +224,11 @@
     if (!gcan || gcan.width !== vp.w || gcan.height !== H) gcan = K.mk(vp.w, H);
     const gg = gcan.getContext("2d"), img = gg.createImageData(vp.w, H), d = img.data;
     const A = ambient(l), hz = haze(l), lamp = c.lamp && l < 0.85 ? 1 - l : 0;
-    const mx = vp.x + vp.w * MOON_DIR(c.look);
+    const mx = vp.x + vp.w * MOON_DIR(c.look) + (c.pan || 0);
     for (let j = 0; j < H; j++) {
       const y = top + j, z = c.h * c.f / (y - c.hor + 0.5), wz = pos + z;
       const fog = Math.min(0.92, Math.pow(z / FAR, 1.15));
-      const px = z / c.f;                                   /* metres a pixel, across, at this depth */
+      const px = z / c.f, cx = c.cx + bend(c, z);           /* metres a pixel, across, at this depth; the centre, turned */
       const onWater = water.some(([a, b]) => z > a && z < b);
       const bank = water.some(([a, b]) => z > a - 5 && z < b + 5);
       const nearSt = stZ.some(s => Math.abs(s - z) < 75);
@@ -194,7 +237,7 @@
       const furrowZ = Math.floor(wz / 0.9) % 2;
       const cut = z > stopZ;
       for (let i = 0; i < vp.w; i++) {
-        const X = (vp.x + i - c.cx) * px + c.x, aX = Math.abs(X);
+        const X = (vp.x + i - cx) * px + c.x, aX = Math.abs(X);
         let r, gr, b, lit = 1;
         if (onWater && aX > 3.4) {
           /* the river: dark, the moon's broken path on it */
@@ -425,24 +468,42 @@
         g.fillStyle = fogged("#2a2c33", l, z); g.fillRect(Math.round(b.x), Math.round(t.y), Math.max(1, Math.round(0.12 * b.s)), Math.max(1, Math.round(b.y - t.y)));
         if (l < 0.8) { const r = Math.max(1, Math.round(0.3 * t.s)); g.fillStyle = "rgba(255,214,140,.18)"; K.disc(g, t.x, t.y, r * 4, r * 4); g.fillStyle = "rgba(255,214,140,.3)"; K.disc(g, t.x, t.y, r * 2, r * 2); K.disc(g, t.x, t.y, r, r, "#ffe9b0"); }
       }
-      const bx0 = side * 9, z0 = o.z - 18, z1 = o.z + 18, Hh = 8.5;
-      if (z0 < 3) return;
-      const f0 = P(c, bx0, 0, z0), f1 = P(c, bx0, Hh, z0), r0 = P(c, bx0, 0, z1), r1 = P(c, bx0, Hh, z1);
+      /* the station house: a stone box nine deep under a gable roof, its near end toward us.
+         Alongside it, it is cut at the near plane rather than vanishing. */
+      const bx0 = side * 9, bk = side * 18, z0 = o.z - 18, z1 = o.z + 18, Hh = 8.5, zn = Math.max(3, z0);
+      if (z1 < 3) return;
+      const f0 = P(c, bx0, 0, zn), f1 = P(c, bx0, Hh, zn), r0 = P(c, bx0, 0, z1), r1 = P(c, bx0, Hh, z1);
       /* the long stone face toward the track, coursed */
       K.poly(g, [[f0.x, f0.y], [f1.x, f1.y], [r1.x, r1.y], [r0.x, r0.y]], fogged("#8c8272", l, o.z));
-      for (let k = 1; k < 8; k++) { const a = P(c, bx0, Hh * k / 8, z0), b = P(c, bx0, Hh * k / 8, z1); g.fillStyle = fogged("#6e6658", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
-      const rf = P(c, bx0 + side * 4.5, Hh + 4.5, z0), rr = P(c, bx0 + side * 4.5, Hh + 4.5, z1);
+      for (let k = 1; k < 8; k++) { const a = P(c, bx0, Hh * k / 8, zn), b = P(c, bx0, Hh * k / 8, z1); g.fillStyle = fogged("#6e6658", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
+      const rx = bx0 + side * 4.5, rf = P(c, rx, Hh + 4.5, zn), rr = P(c, rx, Hh + 4.5, z1);
       K.poly(g, [[f1.x, f1.y], [rf.x, rf.y], [rr.x, rr.y], [r1.x, r1.y]], fogged("#3a4150", l, o.z));
-      for (let k = 1; k < 6; k++) { const a = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, z0), b = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, z1); g.fillStyle = fogged("#2c323f", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
+      for (let k = 1; k < 6; k++) { const a = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, zn), b = P(c, bx0 + side * 4.5 * k / 6, Hh + 4.5 * k / 6, z1); g.fillStyle = fogged("#2c323f", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
       /* windows: lit, warm; amber-red where the wolves are in */
+      const lit = i => l < 0.7 ? (o.held ? (i % 3 ? "#ff9a5a" : "#3a2a24") : (i % 4 ? "#ffcf6a" : "#2a3040")) : "#2a3040";
       for (let i = 0; i < 7; i++) for (const yy of [1.6, 5]) {
-        const zw = z0 + 3 + i * 4.6, a = P(c, bx0, yy, zw), b = P(c, bx0, yy + 2.4, zw + 2);
-        g.fillStyle = l < 0.7 ? (o.held ? (i % 3 ? "#ff9a5a" : "#3a2a24") : (i % 4 ? "#ffcf6a" : "#2a3040")) : "#2a3040";
+        const zw = z0 + 3 + i * 4.6; if (zw < 3) continue;
+        const a = P(c, bx0, yy, zw), b = P(c, bx0, yy + 2.4, zw + 2);
+        g.fillStyle = lit(i);
         g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(b.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(a.y - b.y)));
       }
       if (o.held) for (const zz of [z0 + 9, z0 + 27]) {
+        if (zz < 3) continue;
         const a = P(c, bx0, Hh - 0.3, zz), b = P(c, bx0, Hh - 4.5, zz + 2.6);
         g.fillStyle = "#b52c1b"; g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(a.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(b.y - a.y)));
+      }
+      /* the near gable end, in shadow: coursed stone, the verge of the roof, two windows up and down */
+      if (z0 >= 3) {
+        const e3 = P(c, bk, Hh, z0), e4 = P(c, bk, 0, z0);
+        K.poly(g, [[f0.x, f0.y], [f1.x, f1.y], [rf.x, rf.y], [e3.x, e3.y], [e4.x, e4.y]], fogged("#756c5e", l, o.z));
+        for (let k = 1; k < 8; k++) { const a = P(c, bx0, Hh * k / 8, z0), b = P(c, bk, Hh * k / 8, z0); g.fillStyle = fogged("#5c5549", l, o.z); K.line(g, a.x, a.y, b.x, b.y); }
+        for (const yy of [1.6, 5]) {
+          const a = P(c, bx0 + side * 3.6, yy, z0), b = P(c, bx0 + side * 5.4, yy + 2.4, z0);
+          g.fillStyle = lit(yy > 3 ? 1 : 2);
+          g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(b.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(a.y - b.y)));
+        }
+        const vw = Math.max(1, Math.round(0.3 * f1.s));
+        K.line(g, f1.x, f1.y, rf.x, rf.y, fogged("#262b36", l, o.z), vw); K.line(g, rf.x, rf.y, e3.x, e3.y, fogged("#262b36", l, o.z), vw);
       }
       /* the name board on its posts, once it can be read */
       const nb = P(c, side * 3.4, 3.2, o.z - 34);
