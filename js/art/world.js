@@ -149,6 +149,18 @@
     return L.ahead(S, FAR / W.VM + 0.3, dir).map(a => Object.assign({ z: a.d * W.VM }, a));
   }
   W.items = items;
+  /* which side of the camera a station's platform stands, +1 right, -1 left, for a camera looking at
+     node n along edge from. The platform is on the line's north side (west, where it runs due north),
+     so it stays put on the ground: right of a train going west, left behind her once she is by.
+     The platform runs along the station's axis: through it, or, where both ways in come from the
+     same side (Port Clair), along the two together. */
+  W.platformSide = (n, from) => {
+    const N = L.nodes[n], u = L.adj[n].map(e => { const O = L.nodes[L.other(e, n)], d = Math.hypot(O.x - N.x, O.y - N.y) || 1; return [(O.x - N.x) / d, (O.y - N.y) / d]; });
+    const [p, q = [0, 0]] = u, k = p[0] * q[0] + p[1] * q[1] < 0 ? -1 : 1, ax = p[0] + k * q[0], ay = p[1] + k * q[1];
+    let nx = -ay, ny = ax; if (ny > 0 || (ny === 0 && nx > 0)) { nx = -nx; ny = -ny; }
+    const F = L.nodes[L.other(from, n)], fx = N.x - F.x, fy = N.y - F.y;
+    return -fy * nx + fx * ny < 0 ? -1 : 1;
+  };
 
   /* ---- the ground, a pixel at a time ---- */
   /* field crops, by day: ploughland, stubble, pasture, lucerne, fallow */
@@ -329,7 +341,7 @@
     for (const a of its) {
       if (a.k === "node") {
         const N = L.nodes[a.n];
-        if (N.kind === "st") list.push({ z: a.z, k: "station", n: a.n, held: S.st[a.n] && S.st[a.n].held });
+        if (N.kind === "st") list.push({ z: a.z, k: "station", n: a.n, side: W.platformSide(a.n, a.from), held: S.st[a.n] && S.st[a.n].held });
         if (L.isJunction(a.n)) list.push({ z: a.z, k: "points", n: a.n, p: S.pts[a.n], from: a.from });
       } else if (a.k === "bridge") list.push({ z: a.z, k: "bridge" });
       else if (a.k === "cut") list.push({ z: a.z, k: "cut", known: S.cut[a.e] && S.cut[a.e].known });
@@ -399,13 +411,13 @@
       const n = P(c, o.x, 0.85, o.z + 16); g.fillStyle = fogged("#2c2219", l, o.z); K.line(g, b.x, t.y + 1, n.x, n.y);
     },
     station(g, c, o, l, now, S) {
-      const side = 1, plat0 = Math.max(2.5, o.z - 75), plat1 = o.z + 75;
+      const side = o.side, plat0 = Math.max(2.5, o.z - 75), plat1 = o.z + 75;
       /* the platform face and its slabs, the white edge */
       for (let z = plat1; z >= plat0; z -= 2) {
-        const a = P(c, side * 2.2, 0.95, z), b = P(c, side * 7.4, 0.95, z), d = P(c, side * 2.2, 0, z);
-        g.fillStyle = fogged(Math.floor(z / 4) % 2 ? "#8a857a" : "#7d786d", l, z); g.fillRect(Math.round(a.x), Math.round(a.y), Math.max(1, Math.round(b.x - a.x)), Math.max(1, Math.round(2 * a.s / 10)));
+        const a = P(c, side * 2.2, 0.95, z), b = P(c, side * 7.4, 0.95, z), d = P(c, side * 2.2, 0, z), ew = Math.max(1, Math.round(0.25 * a.s));
+        g.fillStyle = fogged(Math.floor(z / 4) % 2 ? "#8a857a" : "#7d786d", l, z); g.fillRect(Math.round(Math.min(a.x, b.x)), Math.round(a.y), Math.max(1, Math.round(Math.abs(b.x - a.x))), Math.max(1, Math.round(2 * a.s / 10)));
         g.fillStyle = fogged("#4a4640", l, z); g.fillRect(Math.round(a.x), Math.round(a.y), 1, Math.max(1, Math.round(d.y - a.y)));
-        g.fillStyle = fogged("#d8d2c0", l, z); g.fillRect(Math.round(a.x), Math.round(a.y), Math.max(1, Math.round(0.25 * a.s)), 1);
+        g.fillStyle = fogged("#d8d2c0", l, z); g.fillRect(Math.round(a.x) - (side < 0 ? ew - 1 : 0), Math.round(a.y), ew, 1);
       }
       for (let z = plat1 - 8; z >= plat0; z -= 24) {
         const b = P(c, side * 5.6, 0.95, z), t = P(c, side * 5.6, 4.8, z);
@@ -437,10 +449,10 @@
         const name = L.nodes[o.n].name, tw = K.text5w(name);
         const sc = PX.clamp(Math.round(nb.s / 9), 1, 2), w = tw * sc + 8, h = 7 * sc + 6;
         const bc = K.get(`board:${o.n}:${sc}`, () => { const q = K.mk(w, h), bg = q.getContext("2d"); bg.fillStyle = "#1d2a40"; bg.fillRect(0, 0, w, h); bg.fillStyle = "#e9e4d8"; bg.fillRect(1, 1, w - 2, h - 2); bg.fillStyle = "#1d2a40"; bg.fillRect(2, 2, w - 4, h - 4); const tc = K.mk(tw, 7); K.text5(tc.getContext("2d"), name, 0, 0, "#f2ecd8"); bg.imageSmoothingEnabled = false; bg.drawImage(tc, 4, 3, tw * sc, 7 * sc); return q; });
-        const pb = P(c, side * 3.4, 0.95, o.z - 34);
-        g.fillStyle = fogged("#2a2c33", l, o.z); g.fillRect(Math.round(nb.x + 2), Math.round(nb.y), 1, Math.round(pb.y - nb.y)); g.fillRect(Math.round(nb.x + bc.width - 3), Math.round(nb.y), 1, Math.round(pb.y - nb.y));
+        const pb = P(c, side * 3.4, 0.95, o.z - 34), bx = Math.round(side < 0 ? nb.x - bc.width : nb.x);
+        g.fillStyle = fogged("#2a2c33", l, o.z); g.fillRect(bx + 2, Math.round(nb.y), 1, Math.round(pb.y - nb.y)); g.fillRect(bx + bc.width - 3, Math.round(nb.y), 1, Math.round(pb.y - nb.y));
         g.globalAlpha = PX.clamp((nb.s - 5) / 4, 0, 1) * (l < 0.5 ? 0.88 : 1);
-        g.drawImage(bc, Math.round(nb.x), Math.round(nb.y - h));
+        g.drawImage(bc, bx, Math.round(nb.y - h));
         g.globalAlpha = 1;
       }
     },
