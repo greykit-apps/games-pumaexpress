@@ -139,8 +139,9 @@
       const sea = K.fbm2(x / 5 + 2, y / 5, 31);
       if (sea > 0.55) v -= 34 * (sea - 0.55) / 0.45 + 10;
       for (const [cx2, cy2, cr] of [[5, -6, 2], [-3, 4, 2.4], [6, 5, 1.5], [-6, -2, 1.3]]) { const q = Math.hypot(dx - cx2, dy - cy2); if (q < cr) v -= 18; else if (q < cr + 0.8) v += 8; }
-      if (term) v *= 0.18;
-      const o = (y * c.width + x) * 4; d[o] = v; d[o + 1] = v * 0.97; d[o + 2] = v * 0.86; d[o + 3] = term ? 120 : 255;
+      /* the shadowed limb: earthshine, a little lighter than the sky behind it, so it never reads as a hole in it */
+      if (term) v = 150;
+      const o = (y * c.width + x) * 4; d[o] = v; d[o + 1] = v * 0.97; d[o + 2] = v * (term ? 1.08 : 0.86); d[o + 3] = term ? 26 : 255;
     }
     g.putImageData(img, 0, 0);
     return c;

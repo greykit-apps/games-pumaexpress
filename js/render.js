@@ -1,7 +1,8 @@
 /* The Puma Express -- the play screen: which scene is showing, and what the
  * engine's events look like in it.
  *
- * The cab, the two guns, a station fight, a bridge fight, the map. Each is
+ * The cab, the two guns, a station fight, a bridge fight, the map, and how
+ * the night ended (js/art/ending.js). Each is
  * drawn whole every frame onto the low-resolution canvas, which the page
  * scales up by a whole number. The title's picture is here too: the train
  * running west through the night, side on, its smoke streaming back. */
@@ -12,7 +13,7 @@
 
   R.init = cv => { R.cv = cv; R.g = cv.getContext("2d"); R.g.imageSmoothingEnabled = false; };
   /* the scene now: a fight takes the screen whatever the view */
-  R.sceneOf = (S, ui) => ui.mapView ? "map" : S.phase === "capture" ? "station" : S.phase === "bridge" ? "bridge" : S.view;
+  R.sceneOf = (S, ui) => PX.Ending.has(S) ? "end" : ui.mapView ? "map" : S.phase === "capture" ? "station" : S.phase === "bridge" ? "bridge" : S.view;
 
   /* changing places -- cab, the guns, the map -- dips through black: the last frame
    * of the old place darkens, then the new one comes up out of it */
@@ -43,7 +44,8 @@
     g.save();
     if (R.shake > 0.3 && PX.prefs.shake && scene !== "map") { g.translate(Math.round((Math.random() - 0.5) * R.shake), Math.round((Math.random() - 0.5) * R.shake)); }
     R.shake *= 0.86;
-    if (scene === "map") PX.MapArt.draw(g, S, ui, now);
+    if (scene === "end") PX.Ending.draw(g, S, now, dt);
+    else if (scene === "map") PX.MapArt.draw(g, S, ui, now);
     else if (scene === "station") PX.Station.draw(g, S, ui, now);
     else if (scene === "bridge") PX.BridgeArt.draw(g, S, ui, now);
     else if (scene === "cab") { PX.Cab.draw(g, S, ui, now, () => FX.draw(g, "back")); FX.draw(g, "front"); smokeCab(S, dt); }
@@ -127,7 +129,7 @@
   R.title = (cv, now, dt) => {
     const g = cv.getContext("2d"), W = cv.width, H = cv.height, Mo = PX.Model, World = PX.World;
     g.imageSmoothingEnabled = false;
-    const sc = H / 360, ry = Math.round(H * 0.8), hor = Math.round(H * 0.6);
+    const sc = H / 360, ry = Math.round(H * 0.83), hor = Math.round(H * 0.6);
     const speed = 70 * sc;
     tOff += dt * speed; tAng += dt * speed / (0.78 * 15 * sc);
     g.drawImage(World.skyImage(W, hor + 1, 0, 1), 0, 0);

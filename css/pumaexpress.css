@@ -73,6 +73,16 @@ input::placeholder { color: var(--pe-faint); }
 .sh-box { width: min(820px, 100%); max-height: calc(100vh - 64px); }
 .pe-sheet.wide .sh-box { width: min(1080px, 100%); }
 .pe-sheet.tabbed .sh-box { height: min(600px, calc(100vh - 64px)); }
+/* the end of the night: beside its scene, not over it */
+.pe-sheet.side { justify-items: end; padding-right: clamp(24px, 6vw, 96px); background: linear-gradient(90deg, rgba(6,10,16,.05) 0%, rgba(6,10,16,.18) 40%, rgba(6,10,16,.55) 66%, rgba(6,10,16,.66) 100%); backdrop-filter: none; }
+.pe-sheet.side .sh-box { width: min(560px, 100%); }
+.pe-sheet.side .report { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.pics { margin: 2px 0 18px; }
+.pics .who { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--pe-muted); }
+.pics-row { display: flex; gap: 14px; }
+.pics figure { margin: 0; width: 128px; }
+.pics img { display: block; width: 128px; height: 96px; image-rendering: pixelated; }
+.pics figcaption { margin-top: 6px; font-size: 14px; font-style: italic; line-height: 1.25; color: var(--pe-muted); }
 .sh-head { flex: none; display: flex; align-items: center; gap: 10px; padding: 16px 20px 14px 24px; border-bottom: 1px solid var(--pe-hair); }
 .sh-head h2 { flex: 1; margin: 0; font-size: 26px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sh-head button { display: inline-flex; align-items: center; gap: 7px; background: transparent; border-color: transparent; color: var(--pe-muted); font-size: 15px; padding: 6px 10px; }
@@ -213,6 +223,9 @@ img.fig { display: inline-block; vertical-align: middle; }
 .duc-says img.duc-face { flex: none; width: 80px; height: 80px; border: 1px solid var(--pe-line); border-radius: 6px; background: #1a2236; }
 .duc-says .who { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--pe-muted); }
 .duc-says p { font-size: 17px; }
+.leg { margin: 18px 0 0; }
+.leg .who { margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--pe-muted); }
+.leg img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; border: 1px solid var(--pe-line); border-radius: 4px; }
 .msgs { display: flex; flex-direction: column; gap: 8px; }
 .msgs button { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 12px 16px; border-radius: 6px; }
 .msgs button b { display: flex; align-items: center; gap: 10px; font-size: 18px; }
@@ -232,7 +245,7 @@ img.fig { display: inline-block; vertical-align: middle; }
 @media (prefers-reduced-motion: reduce) { #stage.hurt::before { animation: none; } }
 
 /* ---- the HUD: flat dark panels at the corners ---- */
-#hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; font: 500 15px/1.2 var(--ui); color: var(--pe-text); }
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 2; font: 500 15px/1.2 var(--ui); color: var(--pe-text); zoom: var(--hz, 1); }
 #hud .hp { position: absolute; background: var(--pe-hudpanel); border: 1px solid rgba(233,228,216,.08); border-radius: 6px; box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 8px 22px rgba(0,0,0,.28); }
 #hud .lbl { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: rgba(236,231,220,.8); }
 #hud img { display: block; image-rendering: pixelated; flex: none; }
@@ -321,7 +334,7 @@ img.fig { display: inline-block; vertical-align: middle; }
 .h-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; margin-top: 10px; font-size: 13px; color: var(--pe-muted); }
 .h-legend span { display: flex; align-items: center; gap: 4px; }
 .h-legend .lg { width: 32px; height: 32px; display: block; image-rendering: pixelated; margin: -6px -4px; }
-.h-mvkeys { margin-top: auto; font-size: 14px; color: var(--pe-muted); }
+.h-mvkeys { margin-top: 12px; font-size: 14px; color: var(--pe-muted); }
 /* the HUD makes room when the window is narrow */
 @media (max-width: 1100px) { #h-ahead { width: 220px; } .h-views button { padding: 5px 8px 5px 6px; font-size: 14px; } }
 @media (max-width: 980px) { .h-views button { font-size: 0; gap: 0; padding: 5px; } .h-views button kbd { font-size: 11px; } #h-ahead { top: 64px; } }
@@ -362,7 +375,8 @@ img.fig { display: inline-block; vertical-align: middle; }
 #h-status .h-paint { font-size: 16px; }
 #hud .h-views { top: 4px; left: 236px; transform: none; padding: 2px; background: transparent; border: 0; z-index: 3; }
 #hud .h-views button { padding: 4px 10px 4px 6px; font-size: 14px; }
-#hud #h-ahead { top: 44px; left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 28px); box-sizing: border-box; padding: 7px 18px; }
+/* hung from the bar's foot, square-topped, so it keeps as far above the cab's window as it can */
+#hud #h-ahead { top: 34px; left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 28px); box-sizing: border-box; padding: 6px 18px 7px; border-top: 0; border-radius: 0 0 6px 6px; }
 #hud #h-ahead .ha-rows { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 22px; }
 /* a crowded line ahead takes a second line rather than running off the screen */
 #hud #h-ahead .ha-row { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 0; white-space: nowrap; }
@@ -373,7 +387,9 @@ img.fig { display: inline-block; vertical-align: middle; }
 #hud #h-ahead .ha-row .ha-v { font-size: 17px; }
 #hud #h-ahead .ha-row + .ha-row { padding-left: 22px; border-left: 1px solid var(--pe-hair); }
 #hud .h-fast { top: 92px; }
-#hud .h-mapside { top: 52px; }
-@media (max-width: 1160px) { #h-status .h-row[data-p] > .lbl { display: none; } #hud .h-views button { font-size: 0; gap: 0; padding: 4px; } }
-@media (max-width: 1100px) { .hs-left .h-dawn { display: none; } #hud #h-ahead .ha-row .lbl { display: none; } }
+#hud .h-mapside { top: 52px; bottom: auto; max-height: calc(100% - 116px); }
+/* folded by the width the grown HUD has (main.js sets these classes), not the window's */
+.hud-w1300 #h-status .h-row[data-p] > .lbl { display: none; }
+.hud-w1160 #hud .h-views button { font-size: 0; gap: 0; padding: 4px; }
+.hud-w1100 .hs-left .h-dawn, .hud-w1100 #hud #h-ahead .ha-row .lbl { display: none; }
 @media (max-width: 1000px) { #hud #h-ahead { padding: 6px 14px; } #hud #h-ahead .ha-rows { column-gap: 16px; } #hud #h-ahead .ha-row + .ha-row { padding-left: 16px; } #hud #h-ahead .ha-row .ha-n { font-size: 17px; } #hud #h-ahead .ha-row .ha-v { font-size: 15px; } }

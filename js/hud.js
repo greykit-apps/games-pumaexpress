@@ -90,6 +90,8 @@
       set(el.querySelector(`[data-p="${k}"] .h-bar`), "p" + k, v, (e, n) => { e.className = "h-bar" + (n >= 8 ? " crit" : n >= 5 ? " high" : ""); [...e.children].forEach((i, j) => i.classList.toggle("on", j < n)); e.setAttribute("aria-label", `${n * 10}% damaged`); });
     }
     set(el.querySelector(".h-paint"), "paint", E.paintings(S), (e, v) => { e.textContent = v; e.parentNode.classList.toggle("high", v < 40); });
+    /* a practice fight never runs the engine, so its coal and water cannot move: leave them off */
+    set(el.querySelector(".hs-right"), "practice", !!S.practice, (e, v) => { e.querySelectorAll(".h-sup").forEach(r => { r.hidden = v; }); });
     for (const k of ["coal", "water"]) {
       const v = Math.round(S.cab[k] / C.LOCO[k] * 20) * 5;
       set(el.querySelector(`[data-g="${k}"]`), "g" + k, v, (e, n) => { e.firstChild.style.width = n + "%"; e.className = "h-gauge" + (n <= 20 ? " crit" : n <= 40 ? " high" : ""); e.setAttribute("aria-label", `${k} ${n}%`); });
@@ -98,7 +100,7 @@
     const scene = PX.Render.sceneOf(S, ui), fight = S.phase === "capture" || S.phase === "bridge";
     const call = S.raid ? S.raid.planes.filter(p => p.st === "run" && p.delay <= 0).map(p => E.sight(p, "front") ? "front" : E.sight(p, "rear") ? "rear" : "").join(" ") : "";
     set(el.querySelector(".h-views"), "views", `${scene}|${call}|${fight}`, e => {
-      e.hidden = fight;
+      e.hidden = fight || scene === "end";
       for (const b of e.querySelectorAll("button")) { const v = b.dataset.view; b.classList.toggle("on", v === scene); b.classList.toggle("call", call.includes(v) && v !== scene); b.setAttribute("aria-pressed", String(v === scene)); }
     });
     /* the line ahead */
@@ -114,8 +116,8 @@
     });
     set(el.querySelector(".h-fast"), "fast", !!ui.fast, (e, v) => { e.hidden = !v; });
     const ms = el.querySelector(".h-mapside");
-    set(ms, "map", !!ui.mapView, (e, v) => { e.hidden = !v; });
-    if (ui.mapView && now - (HUD.mapAt || 0) > 400) { HUD.mapAt = now; mapSide(S, ui); }
+    set(ms, "map", scene === "map", (e, v) => { e.hidden = !v; });
+    if (scene === "map" && now - (HUD.mapAt || 0) > 400) { HUD.mapAt = now; mapSide(S, ui); }
     $("stage").classList.toggle("hurt", E.wear(S) >= 80 && S.phase !== "over" && S.phase !== "won");
   };
 

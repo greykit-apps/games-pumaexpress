@@ -26,6 +26,7 @@ What the game is meant to be is in [PRODUCT.md](PRODUCT.md), and how it looks in
 | `js/art/cab.js`, `js/art/world.js` | the cab from the driver's side, and the country going by through its window and over the guns |
 | `js/art/station.js`, `js/art/bridge.js`, `js/art/air.js` | the three fights: a held station, a guarded bridge, the guns and the fighters |
 | `js/art/mapart.js` | the map, a driver's working map in dark paper and pale ink |
+| `js/art/ending.js` | the end of the night: the train standing at Port Clair, or where the night was lost; and the forty-eight paintings, each drawn, each titled |
 | `js/art/people.js`, `js/art/people2.js`, `js/art/fx.js` | Duc, the wolves and your paws; smoke, sparks, tracer and fire |
 | `js/render.js`, `js/hud.js` | which scene is showing (and the title's picture), and the panels over it |
 | `js/sfx.js` | Web Audio: the engine, the whistle, the guns, the title tune |
@@ -61,8 +62,9 @@ index.html?play=<0-2>&seed=<n>
 
 - `skip=1` skips the fight for the yards at Velmont and leaves the train under way.
 - `practice=station`, `practice=air` or `practice=bridge` opens one fight on its own.
-- `view=cab`, `front`, `rear` or `map` picks the view; `v=<mph>` sets her running; `t=<minutes past midnight>` sets the clock (handy for dawn); `raid=1` brings fighters at once.
+- `view=cab`, `front`, `rear` or `map` picks the view; `v=<mph>` sets her running; `t=<minutes on from the midnight before the night>` sets the clock (22:30 is 1350, first light 1770, dawn 1920); `raid=1` brings fighters at once.
 - `pause=1` opens on the pause menu.
+- `end=won`, `dawn`, `burst`, `boiler`, `motion`, `cut`, `derail`, `buffer` or `frontier` ends the night at once, to see its scene and the end sheet beside it (pair `dawn` with `t=1925` for its daylight).
 
 Without `play`, `sheet=<name>` opens a title sheet after the boot (`help`, `settings`, `about`, `scores`), and `shot=1` reveals the title without its print-in.
 
