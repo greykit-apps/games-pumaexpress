@@ -130,7 +130,7 @@
   };
 
   /* ---- pause ---- */
-  const KEYS_CAB = () => (PX.aid("direct") ? [["W S", "throttle"], ["X Z", "brake"], ["F", "door"], ["G", "shovel"], ["H", "whistle"], ["V", "valve"], ["E Q", "reverser"]] : [["← →", "the controls"], ["↑ ↓", "work it"], ["Space", "use it"]]).concat([["1 2", "guns"], ["3", "cab"], ["4", "map"], ["L", "aids"]]);
+  const KEYS_CAB = () => [["W S", "throttle"], ["X Z", "brake"], ["F", "door"], ["G", "shovel"], ["H", "whistle"], ["V", "valve"], ["E Q", "reverser"], ["← →", "the controls"], ["↑ ↓", "work it"], ["1 2", "guns"], ["3", "cab"], ["4", "map"], ["L", "aids"]];
   /* the replies, each with a key: the one that paused resumes, 4 is the map as it is on the line */
   const REPLIES = [["resume", "P", "Resume"], ["map", "4", "The map"], ["settings", "S", "Settings"], ["help", "?", "Help"], ["leave", "Q", "Main menu"]];
   UI.pause = () => {
@@ -306,7 +306,7 @@
       html: () => { const changed = Object.keys(PX.prefs.over).length, adj = changed ? ", adjusted" : ""; return `
         <h3>Aids</h3>
         <div class="row">${pill(PX.prefs.aids === "classic", "Classic" + (PX.prefs.aids === "classic" ? adj : ""), "aids:classic")}${pill(PX.prefs.aids === "field", "Field" + (PX.prefs.aids === "field" ? adj : ""), "aids:field")}</div>
-        <p class="note">Classic drives as 1987 did: a cursor on the controls, your own fire to keep, and dawn the end of it. Field adds the helps below. <kbd>L</kbd> switches between them on the line.</p>
+        <p class="note">Classic drives as 1987 did: your own fire to keep, no help on the line, and dawn the end of it. Field adds the helps below. <kbd>L</kbd> switches between them on the line.</p>
         <details class="aid-list"${UI.aidOpen ? " open" : ""}><summary>Set each aid on its own${changed ? ` (${changed} changed)` : ""}</summary>
         <table class="aids">${PX.AID_LIST.map(([k, n, note]) => `<tr><td><b>${esc(n)}</b><br><span class="note">${esc(note)}</span></td><td class="act">${sw(k, n)}</td></tr>`).join("")}</table></details>
         <h3>Look</h3>
@@ -353,7 +353,7 @@
     ["Driving", `<p><b>Fire, pressure, pull.</b> Coal on the grate heats the boiler; the <b>steam</b> gauge on the driver's board shows its pressure, and <b>heat</b> beside it how hot the water is. Open the <b>firebox door</b> and shovel when it falls; shut the door again, or the cold air steals the heat. Past the red line the boiler is hurt; much past it, it bursts. The <b>safety valve</b> blows off steam.</p>
       <p><b>The throttle</b> turns pressure into pull. <b>The reverser</b> sets forward or back: never move it while she rolls. <b>The brake</b> stops her; a station of ours services her when she stands at its platform.</p>
       <p><b>The points:</b> the repeater by the gauges shows how the next junction is set. Whistle once for the northern way, twice for straight on, three times for the southern. Take a turnout slowly.</p>
-      <p>Coal and water run down as you go: the two gauges at the right of the bar along the top. In Classic the cursor is the only hand: <kbd>←</kbd> <kbd>→</kbd> pick a control, <kbd>↑</kbd> <kbd>↓</kbd> work it, <kbd>Space</kbd> uses it.</p>`],
+      <p>Coal and water run down as you go: the two gauges at the right of the bar along the top. Work the controls with the cursor (<kbd>←</kbd> <kbd>→</kbd> pick one, <kbd>↑</kbd> <kbd>↓</kbd> work it, <kbd>Space</kbd> uses it), with each one's own key, or with the mouse.</p>`],
     ["The fights", `<table class="enemy">
       <tr><td class="figc">${img(PX.People.wolf("aim", 0), 48, 60)}</td><td><p><b>A station.</b> Duc runs up the platform to the points lever and back, but only while you are firing: give him cover. Wolves come up at the windows, which light when they do. Shoot them before they shoot him, or the engine.</p></td></tr>
       <tr><td class="figc">${img(PX.Guns.plane("head", 48, false), 54, 34)}</td><td><p><b>Fighters.</b> <kbd>1</kbd> the front gun, <kbd>2</kbd> the rear. They strafe on the way in; a fighter that has passed is the other gun's. The tab at the top lights for the gun that is needed.</p></td></tr>
@@ -362,8 +362,8 @@
     ["Keys", `<table class="keys">
       <tr><td>Views</td><td><kbd>1</kbd> front gun, <kbd>2</kbd> rear gun, <kbd>3</kbd> cab, <kbd>4</kbd> or <kbd>Tab</kbd> map</td></tr>
       <tr><td>The cab</td><td><kbd>←</kbd> <kbd>→</kbd> pick a control, <kbd>↑</kbd> <kbd>↓</kbd> work it, <kbd>Space</kbd> use it</td></tr>
-      <tr><td>The cab (Field)</td><td><kbd>W</kbd> <kbd>S</kbd> throttle, <kbd>X</kbd> <kbd>Z</kbd> brake on and off, <kbd>E</kbd> <kbd>Q</kbd> reverser, <kbd>F</kbd> door, <kbd>G</kbd> shovel, <kbd>V</kbd> valve, <kbd>H</kbd> whistle; or the mouse</td></tr>
-      <tr><td>Aim, fire</td><td><kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>, <kbd>Space</kbd>; or the mouse (Field)</td></tr>
+      <tr><td>Or each control</td><td><kbd>W</kbd> <kbd>S</kbd> throttle, <kbd>X</kbd> <kbd>Z</kbd> brake on and off, <kbd>E</kbd> <kbd>Q</kbd> reverser, <kbd>F</kbd> door, <kbd>G</kbd> shovel, <kbd>V</kbd> valve, <kbd>H</kbd> whistle; or the mouse</td></tr>
+      <tr><td>Aim, fire</td><td><kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>, <kbd>Space</kbd>; or the mouse</td></tr>
       <tr><td>Fast running</td><td>hold <kbd>Shift</kbd> (Field)</td></tr>
       <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
       <tr><td>Aids</td><td><kbd>L</kbd> Classic or Field</td></tr>

@@ -1,12 +1,11 @@
 /* The Puma Express -- keys, mouse and pads, turned into the engine's command
  * for the next step.
  *
- * In the cab, Classic is 1987's joystick: left and right move the paw from
- * control to control, up and down work the one it is on, Space or Enter uses
- * it. With the Field aid "Mouse and keys on the controls", every control also
- * has a key of its own and the mouse can click and drag them. At the guns,
- * the station and the bridge, the arrows (or W A S D, or the mouse) aim and
- * Space fires. */
+ * In the cab, 1987's joystick: left and right move the paw from control to
+ * control, up and down work the one it is on, Space or Enter uses it. Every
+ * control also has a key of its own, and the mouse can click and drag them,
+ * whatever the aids. At the guns, the station and the bridge, the arrows (or
+ * W A S D, or the mouse) aim and Space fires. */
 "use strict";
 (() => {
   const I = PX.Input = { held: new Set(), pressed: new Set(), pad: new Set(), padPrev: new Set(), stick: null, cursor: 3, device: "keys",
@@ -43,8 +42,8 @@
   I.cmd = (S, aids) => {
     const c = { aids };
     if (I.view) { c.view = I.view; I.view = null; }
-    const direct = aids.direct, m = I.mouse;
-    const mouseAim = direct && m.in && performance.now() - m.movedAt < 4000;
+    const m = I.mouse;
+    const mouseAim = m.in && performance.now() - m.movedAt < 4000;
     let ax = 0, ay = 0;
     const aimKeys = S.phase !== "run" || S.view !== "cab";
     if (on("left") || (aimKeys && on("a"))) ax -= 1;
@@ -56,20 +55,20 @@
     if (S.phase === "capture") {
       if (ax || ay) { c.ax = ax; c.ay = ay; }
       else if (mouseAim) c.aimAt = PX.Station.toScene(m.x, m.y);
-      c.fire = on("act") || (direct && m.down);
+      c.fire = on("act") || m.down;
       return c;
     }
     if (S.phase === "bridge") {
       if (ax || ay) { c.ax = ax; c.ay = ay; }
       else if (mouseAim) { const a = PX.BridgeArt.toAim(m.x, m.y); if (a) c.aimAt = a; }
-      c.firePress = hit("act") || (direct && m.pressed);
+      c.firePress = hit("act") || m.pressed;
       return c;
     }
     if (S.phase !== "run") return c;
     if (S.view !== "cab") {
       if (ax || ay) { c.ax = ax; c.ay = PX.clamp(ay, -1, 1); }
       else if (mouseAim) { const a = PX.Guns.toSight(m.x, m.y); if (a) c.aimAt = a; }
-      c.fire = on("act") || (direct && m.down);
+      c.fire = on("act") || m.down;
       return c;
     }
     /* the cab: the cursor */
@@ -86,8 +85,8 @@
     if (sel === "shovel" && (up || act)) c.shovel = true;
     if (sel === "valve" && (up || act)) c.valve = true;
     if (sel === "whistle" && (upHit || actHit)) c.whistle = true;
-    /* the controls' own keys (a Field aid) */
-    if (direct) {
+    /* the controls' own keys, and the mouse */
+    {
       if (on("w")) c.thr = 1; if (on("s")) c.thr = -1;
       if (on("brakeOn")) c.brk = 1; if (on("brakeOff")) c.brk = -1;
       if (hit("revFwd")) c.rev = 1; if (hit("revBack")) c.rev = -1;
