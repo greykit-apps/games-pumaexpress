@@ -14,11 +14,31 @@
   /* the scene now: a fight takes the screen whatever the view */
   R.sceneOf = (S, ui) => ui.mapView ? "map" : S.phase === "capture" ? "station" : S.phase === "bridge" ? "bridge" : S.view;
 
+  /* changing places -- cab, the guns, the map -- dips through black: the last frame
+   * of the old place darkens, then the new one comes up out of it */
+  const POSTS = ["cab", "front", "rear", "map"], F_OUT = 0.12, F_IN = 0.16;
+  let fade = null, snap = null, drawnAt = -1e9;
+  const dark = f => f.t < F_OUT ? f.t / F_OUT : 1 - (f.t - F_OUT) / F_IN;
+  function startFade(W, H, now) {
+    /* only between places on a running night, not into one from the title or a fight */
+    if (!POSTS.includes(R.scene) || now - drawnAt > 250) { fade = null; return; }
+    if (!snap) snap = document.createElement("canvas");
+    if (snap.width !== W || snap.height !== H) { snap.width = W; snap.height = H; }
+    snap.getContext("2d").drawImage(R.cv, 0, 0);
+    /* changing again mid-fade: carry on from how dark it already is */
+    const d = fade ? dark(fade) : 0;
+    fade = { t: d * F_OUT, base: d };
+  }
+
   R.draw = (S, ui, now, dt) => {
     const g = R.g, W = R.cv.width, H = R.cv.height;
     R.frame++;
     const scene = R.sceneOf(S, ui);
-    if (scene !== R.scene) { R.scene = scene; FX.use(scene === "map" ? "map" : scene); }
+    if (scene !== R.scene) {
+      if (POSTS.includes(scene)) startFade(W, H, now); else fade = null;
+      R.scene = scene; FX.use(scene === "map" ? "map" : scene);
+    }
+    drawnAt = now;
     if (scene !== "map") FX.step(dt);
     g.save();
     if (R.shake > 0.3 && PX.prefs.shake && scene !== "map") { g.translate(Math.round((Math.random() - 0.5) * R.shake), Math.round((Math.random() - 0.5) * R.shake)); }
@@ -31,6 +51,17 @@
     /* the night's light on everything: a cool wash at full dark */
     g.restore();
     if (S.phase === "over" && S.end && (S.end.why === "burst" || S.end.why === "boiler")) { g.fillStyle = "rgba(255,240,220,.12)"; g.fillRect(0, 0, W, H); }
+    if (fade) {
+      const a = dark(fade);
+      if (fade.t < F_OUT) {
+        /* the old place, already as dark as the fade it interrupted, darkening the rest of the way */
+        g.drawImage(snap, 0, 0);
+        g.fillStyle = `rgba(0,0,0,${1 - (1 - a) / (1 - fade.base)})`;
+      } else g.fillStyle = `rgba(0,0,0,${a})`;
+      g.fillRect(0, 0, W, H);
+      fade.t += dt;
+      if (fade.t >= F_OUT + F_IN) fade = null;
+    }
   };
 
   /* smoke from the chimney, by the beat of the exhaust */
