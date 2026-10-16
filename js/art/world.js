@@ -48,7 +48,7 @@
   const swingAt = s => s < YAW_PEAK ? smooth(-YAW_IN, YAW_PEAK, s) : 1 - smooth(YAW_PEAK, YAW_OUT, s);
   function heading(S) {
     const t = S.tr, E = L.edges[t.e], m = L.mdir(S);
-    const next = L.ahead(S, (YAW_IN + 10) / W.VM, m).find(a => a.k === "node");
+    const next = L.ahead(S, (YAW_IN + 10) / W.VM, m, true).find(a => a.k === "node");
     if (next && L.isJunction(next.n)) {
       /* the side DRAW.points lights: ways[0] curves off to the left, ways[2] to the right */
       const ways = L.ways(next.n, next.from), set = ways[S.pts[next.n] === undefined ? 1 : S.pts[next.n]];
@@ -191,7 +191,7 @@
   /* what is on the line, in picture metres, along the way the camera looks */
   function items(S, c) {
     const dir = c.look > 0 ? S.tr.face : -S.tr.face;
-    return L.ahead(S, FAR / W.VM + 0.3, dir).map(a => Object.assign({ z: a.d * W.VM }, a));
+    return L.ahead(S, FAR / W.VM + 0.3, dir, true).map(a => Object.assign({ z: a.d * W.VM }, a));
   }
   W.items = items;
   /* which side of the camera a station's platform stands, +1 right, -1 left, for a camera looking at
@@ -372,6 +372,9 @@
   };
 
   /* ---- what stands by the line, far to near ---- */
+  /* the points' signals stand SIG metres out on each line; a turnout leaves the straight road by BRANCH(z) metres z past them */
+  const SIG = 30, BRANCH = z => (z / 160) * (z / 160) * 11;
+  const diverts = (S, n, from) => { const p = S.pts[n] === undefined ? 1 : S.pts[n]; return L.choose(n, from, p) !== L.choose(n, from, 1); };
   function things(g, S, c, its, base, l, now) {
     /* dealt by where each stands along the way she has run (u) and across it (x, + to the right looking
      * forward), then turned into the camera's frame: z out from it, x to its right */
@@ -395,12 +398,26 @@
       if (a.k === "node") {
         const N = L.nodes[a.n];
         if (N.kind === "st") list.push({ z: a.z, k: "station", n: a.n, side: W.platformSide(a.n, a.from), held: S.st[a.n] && S.st[a.n].held });
-        if (L.isJunction(a.n)) list.push({ z: a.z, k: "points", n: a.n, p: S.pts[a.n], from: a.from });
+        if (L.isJunction(a.n)) {
+          list.push({ z: a.z, k: "points", n: a.n, p: S.pts[a.n], from: a.from });
+          /* a signal on every line into the points, 30 m out on the right of a train coming in: on this
+           * line its face toward us; on each way out, its back, set for a train coming the other way */
+          list.push({ z: a.z - SIG, k: "signal", x: 2.9, face: true, div: diverts(S, a.n, a.from) });
+          const ways = L.ways(a.n, a.from), done = new Set();
+          for (const [sd, e] of [[0, ways[1]], [-1, ways[0]], [1, ways[2]]]) {
+            if (done.has(e)) continue; done.add(e);
+            list.push({ z: a.z + SIG, k: "signal", x: sd * BRANCH(SIG) - 2.9, face: false, div: diverts(S, a.n, e) });
+          }
+        }
       } else if (a.k === "bridge") list.push({ z: a.z, k: "bridge" });
       else if (a.k === "cut") list.push({ z: a.z, k: "cut", known: S.cut[a.e] && S.cut[a.e].known });
       else if (a.k === "end") list.push({ z: a.z, k: "buffer" });
       else if (a.k === "wolf") list.push({ z: a.z, k: "frontier" });
     }
+    /* the points just gone through, behind the camera: their signal on this line, for a train going the
+     * other way, stands until it is passed */
+    const back = L.ahead(S, SIG / W.VM + 0.01, c.look > 0 ? -S.tr.face : S.tr.face, true).find(a => a.k === "node");
+    if (back && L.isJunction(back.n)) list.push({ z: SIG - back.d * W.VM, k: "signal", x: -2.9, face: false, div: diverts(S, back.n, back.from) });
     const stations = list.filter(o => o.k === "station"), bridges = list.filter(o => o.k === "bridge");
     list.sort((a, b) => b.z - a.z);
     const ctx = { prevPole: null };
@@ -553,7 +570,7 @@
         if (div === straight) continue;
         const on = set === div;
         for (let z = o.z; z < o.z + 160; z += 0.8) {
-          const k = (z - o.z) / 160, off = sd * k * k * 11;
+          const off = sd * BRANCH(z - o.z);
           const a = P(c, off - GAUGE, 0, z), b = P(c, off + GAUGE, 0, z);
           if (a.y < c.hor + 1) break;
           g.fillStyle = on ? fogged("#d6dde6", l * 0.5 + 0.5, z) : fogged("#5b636e", l, z);
@@ -561,19 +578,22 @@
           if (Math.floor(z / 0.62) % 2 === 0 && a.s > 3) { g.fillStyle = fogged("#3a2a1c", l, z); g.fillRect(Math.round(a.x - a.s * 0.4), Math.round(a.y) + 1, Math.round(b.x - a.x + a.s * 0.8), 1); }
         }
       }
-      /* the signal: a post, its arm, its lamp (white straight on, amber for the turnout) */
-      const sz = o.z - 30;
-      if (sz > 3) {
-        const b = P(c, 2.9, 0, sz), t = P(c, 2.9, 7, sz), w = Math.max(1, Math.round(0.2 * b.s));
-        g.fillStyle = fogged("#cfcac0", l, sz); g.fillRect(Math.round(b.x), Math.round(t.y), w, Math.max(1, Math.round(b.y - t.y)));
-        const div = set !== straight, aw = Math.round(1.4 * b.s), ah = Math.max(1, Math.round(0.28 * b.s));
-        g.save(); g.translate(Math.round(b.x), Math.round(t.y + 0.4 * b.s)); g.rotate(div ? -0.6 : 0);
-        g.fillStyle = "#b52c1b"; g.fillRect(0, 0, aw, ah); if (aw > 4) { g.fillStyle = "#e9e4d8"; g.fillRect(Math.round(aw * 0.75), 0, Math.max(1, Math.round(aw * 0.1)), ah); }
-        g.restore();
-        const col = div ? "#ffb03a" : "#f4f1e0", r = Math.max(1, Math.round(0.28 * t.s)), lp = P(c, 2.9, 6.2, sz);
-        g.fillStyle = div ? "rgba(255,176,58,.25)" : "rgba(244,241,224,.22)"; K.disc(g, lp.x - r * 2, lp.y, r * 4, r * 4);
-        K.disc(g, lp.x - r * 2, lp.y, r, r, col);
-      }
+    },
+    signal(g, c, o, l) {
+      /* a post, its arm, its lamp: white straight on, amber for the turnout, the arm raised for it. From
+       * behind, the arm's white back and no lamp */
+      const b = P(c, o.x, 0, o.z), t = P(c, o.x, 7, o.z), w = Math.max(1, Math.round(0.2 * b.s));
+      if (!onScreen(c, b.x, 2 * b.s)) return;
+      g.fillStyle = fogged("#cfcac0", l, o.z); g.fillRect(Math.round(b.x), Math.round(t.y), w, Math.max(1, Math.round(b.y - t.y)));
+      const aw = Math.round(1.4 * b.s), ah = Math.max(1, Math.round(0.28 * b.s));
+      g.save(); g.translate(Math.round(b.x) + (o.face ? 0 : w), Math.round(t.y + 0.4 * b.s)); if (!o.face) g.scale(-1, 1); g.rotate(o.div ? -0.6 : 0);
+      g.fillStyle = o.face ? "#b52c1b" : fogged("#d8d3c6", l, o.z); g.fillRect(0, 0, aw, ah);
+      if (aw > 4) { g.fillStyle = o.face ? "#e9e4d8" : fogged("#24211e", l, o.z); g.fillRect(Math.round(aw * 0.75), 0, Math.max(1, Math.round(aw * 0.1)), ah); }
+      g.restore();
+      if (!o.face) return;
+      const col = o.div ? "#ffb03a" : "#f4f1e0", r = Math.max(1, Math.round(0.28 * t.s)), lp = P(c, o.x, 6.2, o.z);
+      g.fillStyle = o.div ? "rgba(255,176,58,.25)" : "rgba(244,241,224,.22)"; K.disc(g, lp.x - r * 2, lp.y, r * 4, r * 4);
+      K.disc(g, lp.x - r * 2, lp.y, r, r, col);
     },
     bridge(g, c, o, l) {
       /* a through truss either side, bank to bank: top chord, posts, the diagonals, the bracing overhead */
