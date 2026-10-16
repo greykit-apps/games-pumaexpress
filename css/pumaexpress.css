@@ -1,9 +1,11 @@
 /* The Puma Express -- the page around the play screen, and every screen with
- * words on it: flat dark panels over the scene, hairline edges, warm
- * off-white words in a condensed sans, numbers and keys in a pixel face,
- * lamp brass for what is ready and chosen, amber for a warning, red-orange
- * for danger. Where a control can be chosen as well as focused (the pills,
- * the switches), the focus is an off-white ring and only "chosen" is brass.
+ * words on it. The HUD is flat dark panels over the scene, hairline edges,
+ * warm off-white words; every sheet and window is dim lamplit paper, its
+ * tokens re-read as ink in the last block. Words in a condensed sans,
+ * numbers and keys in a pixel face, brass (red pencil on paper) for what is
+ * ready and chosen, amber for a warning, red-orange for danger. Where a
+ * control can be chosen as well as focused (the pills, the switches), the
+ * focus is a ring in the ground's ink and only "chosen" is lit.
  * The play screen itself is pixel art (js/art/). The canon
  * palette (css/gk-tokens.css) still comes first, for the greykit.games
  * boot; nothing here gives a canon name another value (games-meta
@@ -394,9 +396,9 @@ img.fig { display: inline-block; vertical-align: middle; }
 .hud-w1100 .hs-left .h-dawn, .hud-w1100 #hud #h-ahead .ha-row .lbl { display: none; }
 @media (max-width: 1000px) { #hud #h-ahead { padding: 6px 14px; } #hud #h-ahead .ha-rows { column-gap: 16px; } #hud #h-ahead .ha-row + .ha-row { padding-left: 16px; } #hud #h-ahead .ha-row .ha-n { font-size: 17px; } #hud #h-ahead .ha-row .ha-v { font-size: 15px; } }
 
-/* ==== mock-up (menu-mockups): the name on a cast nameplate, the title menu as the
-   Resistance's orders to seize the train, the pause as a telegram. Paper and brass where the
-   rest of the chrome is dark glass; the sheets, the HUD and the keys are untouched. ==== */
+/* ==== paper and brass: the name on a cast nameplate, the title menu as the Resistance's
+   orders to seize the train, the pause as a telegram, and every sheet and window as paper
+   pinned up where the lamp only just reaches. The HUD stays dark glass over the night. ==== */
 :root {
   --pe-paper-ink: #22180f;                /* 8.3:1 where the lamp falls, 5.6:1 at the edge */
   --pe-paper-ink2: #36281a;               /* 7:1 lit, 4.7:1 at the edge */
@@ -456,7 +458,7 @@ img.fig { display: inline-block; vertical-align: middle; }
 .tt-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 22px 0 26px; font: italic 500 13px/1.3 var(--ui); color: var(--pe-paper-ink2); }
 
 /* the telegram: buff form, a printed head, the night on pasted tape, the replies below */
-.pe-tg .pe-win { border: 0; border-radius: 2px; color: var(--pe-paper-ink);
+.pe-sheet.pe-tg .pe-win { border: 0; border-radius: 2px; color: var(--pe-paper-ink);
   background: var(--pe-grain), radial-gradient(130% 100% at 28% 0%, #c6b583 0%, #b3a272 55%, #a89768 100%);
   box-shadow: inset 0 0 0 1px rgba(40,25,10,.45), inset 0 0 40px rgba(50,35,8,.15), 0 24px 70px rgba(0,0,0,.65); }
 .pe-tg .sh-head { flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px 26px 9px; border-bottom: 3px double rgba(42,31,20,.65); }
@@ -480,3 +482,41 @@ img.fig { display: inline-block; vertical-align: middle; }
 .pe-tg .col button:focus { color: #160f08; background: linear-gradient(90deg, rgba(110,24,14,.3), rgba(110,24,14,.09) 75%, rgba(110,24,14,0)); }
 .pe-tg .col button:focus::after { border-left-color: var(--pe-paper-red); }
 .pe-tg .keys { background: rgba(60,40,15,.1); border-top: 1px dashed rgba(42,31,20,.45); color: var(--pe-paper-ink2); }
+
+/* every sheet and window: the dark tokens re-read as ink on paper, so the rules above need no copies.
+   Brass becomes red pencil (chosen, the primary, the focused card); focus is an ink ring. */
+.pe-sheet, .pe-ask {
+  --pe-bg: #cdc1a1;                       /* a field written into, and the gap in a focus ring */
+  --pe-panel: #bfb192;
+  --pe-raise: rgba(240,229,200,.22);      /* a control at rest: a lighter slip of paper */
+  --pe-raise2: rgba(240,229,200,.45);
+  --pe-hair: rgba(34,24,15,.16);
+  --pe-line: rgba(34,24,15,.34);
+  --pe-text: #22180f;                     /* 8.2:1 lit, 6.7:1 at the edge */
+  --pe-muted: #33251a;                    /* 5.7:1 at the edge */
+  --pe-faint: #3d2e1e;                    /* 5:1 at the edge */
+  --pe-yellow: #6e180e;                   /* red pencil: ready, chosen; light paper on it 9.3:1 */
+  --pe-yellow-hi: #85200f;
+  --pe-green: #163d19;
+  --pe-amber: #4c2f00;
+  --pe-red: #8a2214;
+  --pe-red-text: #64130b;
+  --pe-ink: #f0e5c8;                      /* words on a red-pencil fill */
+  color: var(--pe-text); caret-color: var(--pe-yellow);
+}
+.pe-sheet .sh-box, .pe-sheet:not(.pe-tg) .pe-win, .pe-ask .pe-win { border: 0; border-radius: 2px;
+  background: var(--pe-grain), radial-gradient(140% 110% at 18% 0%, #c6b899 0%, #bfb192 45%, #ae9f7f 100%);
+  box-shadow: inset 0 0 0 1px rgba(40,25,10,.45), inset 0 0 50px rgba(40,25,8,.14), 0 24px 70px rgba(0,0,0,.65); }
+.pe-sheet .sh-head, .pe-ask .sh-head { border-bottom: 3px double rgba(34,24,15,.6); }
+.pe-sheet .sh-head h2, .pe-ask .sh-head h2 { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.pe-sheet .sh-tabs { border-bottom-color: var(--pe-line); }
+.pe-sheet *, .pe-ask * { scrollbar-color: rgba(34,24,15,.35) transparent; }
+.pe-sheet ::selection, .pe-ask ::selection { background: var(--pe-yellow); color: var(--pe-ink); }
+.pe-sheet kbd, .pe-ask kbd { color: var(--pe-text); border-color: rgba(34,24,15,.5); background: rgba(240,229,200,.3); }
+.pe-sheet a, .pe-ask a, .pe-sheet .gk-credit a { color: var(--pe-red-text); }
+.sh-body:focus-visible { box-shadow: inset 0 0 0 2px rgba(110,24,14,.45); }
+.pe-sheet button.danger, .pe-ask button.danger { border-color: var(--pe-red); }
+.pe-sheet button.pill.on { border-color: rgba(110,24,14,.6); background: rgba(110,24,14,.1); }
+.pe-sheet button.pill.on:focus { background: rgba(110,24,14,.16); }
+.pe-sheet .diffs button:focus kbd, .pe-sheet .msgs button:focus kbd { color: var(--pe-ink); border-color: rgba(240,229,200,.5); background: transparent; }
+.pe-sheet .diffs button:focus .last, .pe-sheet .diffs button:focus span.when { color: rgba(240,229,200,.85); }
