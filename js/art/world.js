@@ -373,7 +373,10 @@
   function things(g, S, c, its, pos, l, now) {
     const list = [];
     const z0 = 3, z1 = FAR;
-    for (let k = Math.ceil((pos + z0) / 55); k * 55 < pos + z1; k++) list.push({ z: k * 55 - pos, k: "pole", n: k });
+    const k0 = Math.ceil((pos + z0) / 55);
+    for (let k = k0; k * 55 < pos + z1; k++) list.push({ z: k * 55 - pos, k: "pole", n: k });
+    /* the span from the pole just gone past, behind the camera, to the first one in view */
+    list.push({ z: z0 - 1, k: "span", za: (k0 - 1) * 55 - pos, zb: k0 * 55 - pos });
     for (let k = Math.ceil((pos + z0) / 16); k * 16 < pos + z1; k++) {
       const h = K.hash(k, 5, 101), side = K.hash(k, 7) < 0.5 ? -1 : 1;
       if (h < 0.24) list.push({ z: k * 16 - pos + K.hash(k, 6) * 12, k: "tree", type: K.hash(k, 10) < 0.3 ? "poplar" : K.hash(k, 10) < 0.42 ? "pine" : "oak", x: side * (6 + K.hash(k, 8) * 46), n: k });
@@ -413,13 +416,25 @@
       g.fillRect(Math.round(b.x - cw), arm, cw * 2 + w, Math.max(1, Math.round(0.12 * b.s)));
       if (b.s > 6) { g.fillStyle = fogged("#c9c6bc", l, o.z); for (const f of [-0.9, -0.3, 0.3, 0.9]) g.fillRect(Math.round(b.x + f * cw), arm - 1, 1, 1); }
       /* the wires, sagging to the next pole */
-      const nz = o.z + 55;
-      if (o.z < 600) {
-        const n = P(c, -3.6, 7.2, nz), narm = n.y + 0.35 * n.s, ncw = 1.1 * n.s;
-        g.fillStyle = l < 0.4 ? "rgba(20,26,40,.9)" : "rgba(40,40,46,.8)";
-        for (const f of [-0.9, 0.9]) {
-          const x0 = b.x + f * cw, y0 = arm, x1 = n.x + f * ncw, y1 = narm, steps = Math.max(2, Math.ceil(Math.abs(x1 - x0) + Math.abs(y1 - y0)));
-          for (let i = 0; i <= steps; i++) { const t2 = i / steps, sag = Math.sin(t2 * Math.PI) * 0.35 * b.s * 0.6; g.fillRect(Math.round(PX.lerp(x0, x1, t2)), Math.round(PX.lerp(y0, y1, t2) + sag), 1, 1); }
+      if (o.z < 600) DRAW.span(g, c, { za: o.z, zb: o.z + 55 }, l);
+    },
+    span(g, c, o, l) {
+      /* a pair of wires from the crossarm at za to the one at zb, sagging half a metre at the middle. A
+       * span reaching back past the camera starts where it has already left the picture. */
+      const Y = 6.85, sag = z => 0.5 * Math.sin((z - o.za) / (o.zb - o.za) * Math.PI);
+      g.fillStyle = l < 0.4 ? "rgba(20,26,40,.9)" : "rgba(40,40,46,.8)";
+      for (const f of [-0.99, 0.99]) {
+        const X = -3.6 + f, zn = Math.max(o.za, 0.05, Math.abs(X - c.x) * c.f / c.vp.w, Math.abs(Y - c.h) * c.f / c.vp.h);
+        if (zn >= o.zb) continue;
+        const a = P(c, X, Y - sag(zn), zn), b = P(c, X, Y, o.zb);
+        const n = PX.clamp(Math.ceil((Math.abs(b.x - a.x) + Math.abs(b.y - a.y)) / 6), 2, 64);
+        let p = a;
+        for (let i = 1; i <= n; i++) {
+          /* even steps in 1/z are even steps across the screen */
+          const z = 1 / PX.lerp(1 / zn, 1 / o.zb, i / n), q = P(c, X, Y - sag(z), z);
+          const steps = Math.max(1, Math.ceil(Math.abs(q.x - p.x) + Math.abs(q.y - p.y)));
+          for (let j = i === 1 ? 0 : 1; j <= steps; j++) g.fillRect(Math.round(PX.lerp(p.x, q.x, j / steps)), Math.round(PX.lerp(p.y, q.y, j / steps)), 1, 1);
+          p = q;
         }
       }
     },
