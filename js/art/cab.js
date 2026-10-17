@@ -471,9 +471,9 @@
       if (big && step && r >= 20) { const v = String(Math.round(f * max / (max >= 300 ? 100 : 1))); K.text3(g, v, Math.round(x + Math.cos(a) * (fr - 9) - K.text3w(v) / 2), Math.round(y + Math.sin(a) * (fr - 9) - 2), "#3a3226"); }
     }
   }
-  /* the clock's case and face: a brass drum on a flange screwed to the plate, a cream face with the hours ticked round it,
-     and the red line from first light to dawn, where the gauges keep theirs, so the hour hand coming into it says
-     the night is running out */
+  /* the clock's case and face: a brass drum on a flange screwed to the plate, a cream face with the hours ticked round it;
+     it is a clock and nothing more, but the crew have stuck a strip of tape across the rim at eight, dawn, and pencilled
+     the hour on it, so the hour hand coming round to it says the night is running out */
   const clockAng = h => (h / 12 * 360 - 90) * Math.PI / 180;
   function clockFace(g, G) {
     const { x, y, r } = G, rim = Math.max(3, Math.round(r * 0.2)), fr = r - rim;
@@ -486,14 +486,25 @@
       const d = Math.hypot(i, j); if (d > fr) continue;
       g.fillStyle = K.mix("#f4ecd4", "#cfc3a2", Math.pow(d / fr, 3) * 0.8 + (j / fr) * 0.08); g.fillRect(x + i, y + j, 1, 1);
     }
-    const h0 = (C.FIRST_LIGHT / 60) % 12, h1 = (C.DAWN / 60) % 12;
-    for (let a = clockAng(h0); a <= clockAng(h1) + 0.001; a += 0.02) for (let rr = fr - 2; rr <= fr - 1; rr++) K.px(g, x + Math.cos(a) * rr, y + Math.sin(a) * rr, "#c0311c");
     for (let h = 1; h < 12; h++) {
       const a = clockAng(h), big = h % 3 === 0, r0 = fr - (big ? 5 : 3), r1 = fr - 1;
-      K.line(g, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, h >= h0 && h <= h1 ? "#a52a18" : "#2a241c");
+      K.line(g, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, "#2a241c");
     }
     /* twelve is marked twice, so the face reads the right way up at a glance */
     K.line(g, x - 1, y - fr + 1, x - 1, y - fr + 5, "#2a241c"); K.line(g, x + 1, y - fr + 1, x + 1, y - fr + 5, "#2a241c");
+    /* the tape at dawn: a strip of old yellowed tape laid along the hour, from the face out over the bezel and the
+       flange, its ends torn, a pencil line down it on the hour */
+    { const a = clockAng((C.DAWN / 60) % 12), dx = Math.cos(a), dy = Math.sin(a), s0 = fr - 8, s1 = r + 5, e = r + 7, side = Math.sign(0.6 * dy - 0.7 * dx) || 1;
+      for (let j = -e; j <= e; j++) for (let i = -e; i <= e; i++) {
+        const sAl = i * dx + j * dy, v = -i * dy + j * dx;
+        if (Math.abs(v) > 3.2) continue;
+        const torn = (K.hash(Math.round(v * 2), 0, 77) - 0.5) * 2, t0 = s0 + torn, t1 = s1 - torn;
+        if (sAl < t0 || sAl > t1) continue;
+        /* lit from the upper left; its edges and torn ends darker, lifting a little and catching the grime */
+        const edge = Math.abs(v) > 2.4 || sAl < t0 + 1 || sAl > t1 - 1, lv = v * side * 0.3 + K.bayer(x + i, y + j) * 0.35;
+        const col = edge ? "#857654" : lv > 0.5 ? "#e8dcb4" : lv < -0.4 ? "#bfae80" : "#d6c79a";
+        g.fillStyle = Math.abs(v) < 0.5 && sAl > t0 + 2 && sAl < r ? "#3a3226" : col; g.fillRect(x + i, y + j, 1, 1);
+      } }
   }
 
   /* ---- the boiler through the window: ray-traced once for this size, from the driver's eye ----
@@ -731,7 +742,7 @@
     needle(g, G.mph, Math.abs(S.tr.v), 80);
     needle(g, G.temp, c.T, 500);
     needle(g, G.vac, c.brake, 1);
-    /* the clock's hands: the night's time, the minute hand sweeping, the hour hand creeping toward the red */
+    /* the clock's hands: the night's time, the minute hand sweeping, the hour hand creeping round toward the tape */
     { const G = Lo.clock, fr = G.r - Math.max(3, Math.round(G.r * 0.2)), t = S.t / 60;
       const ah = clockAng(t % 12), am = clockAng((t % 1) * 12);
       for (const [a, len, w] of [[ah, fr * 0.55, 2], [am, fr - 2, 1]]) {
