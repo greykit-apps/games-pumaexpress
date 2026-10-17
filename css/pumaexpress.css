@@ -177,10 +177,9 @@ img.glyph { display: block; }
 
 /* ---- the title: the canon default (@gk-title v0.4) over the train, in the engine's green lined out in brass ---- */
 #title { --gk-title-ink: var(--pe-text); --gk-title-hi: #f0c062; --gk-title-focus: var(--pe-yellow); --gk-title-dim: var(--pe-muted);
-  --gk-title-panel: rgba(28,43,35,.94); --gk-title-line: rgba(232,189,92,.4); --gk-title-font: var(--ui); }
+  --gk-title-panel: rgba(28,43,35,.82); --gk-title-line: rgba(232,189,92,.4); --gk-title-font: var(--ui); }
 #title .gk-title > .scene { background: #070b1c; }
 .pe-scene { image-rendering: pixelated; image-rendering: crisp-edges; }
-#title .gk-sub { max-width: 440px; line-height: 1.6; white-space: pre-line; text-shadow: 0 1px 10px rgba(6,10,16,.9); }
 
 /* ---- new game, the station report, the end ---- */
 .diffs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }

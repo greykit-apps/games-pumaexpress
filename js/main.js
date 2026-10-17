@@ -35,7 +35,6 @@
     const saved = PX.loadGame(), best = PX.scores()[0], d = C.DIFF[PX.store.get(PX.KEY_DIFF, 1)] || C.DIFF[1];
     return {
       name: "The Puma Express",
-      sub: "Velmont to Port Clair ·\none night · forty-eight paintings",   /* the break is kept by the css (pre-line) */
       scene: true,
       primary: saved ? "resume" : "new",
       items: [
