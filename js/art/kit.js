@@ -24,6 +24,21 @@
   /* a 4x4 ordered dither, -0.5..0.5 */
   const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   K.bayer = (x, y) => BAYER[(y & 3) * 4 + (x & 3)] / 16 - 0.47;
+  /* a colour laid on at a coverage of a (0..1) through the same 4x4 dither, as whole opaque pixels: smoke and
+     spray are thin by how many pixels they take, never by being drawn see-through */
+  K.dither = (g, rgb, a) => {
+    const n = Math.round(PX.clamp(a, 0, 1) * 16);
+    if (!n) return null;
+    const pats = g.pePats || (g.pePats = new Map()), key = rgb + "|" + n;
+    let p = pats.get(key);
+    if (!p) {
+      const c = K.mk(4, 4), q = c.getContext("2d");
+      q.fillStyle = `rgb(${rgb})`;
+      for (let i = 0; i < 16; i++) if (BAYER[i] < n) q.fillRect(i & 3, i >> 2, 1, 1);
+      p = g.createPattern(c, "repeat"); pats.set(key, p);
+    }
+    return p;
+  };
   K.rgb = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   K.hex = ([r, g, b]) => "#" + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
   K.mix = (a, b, t) => { const A = K.rgb(a), B = K.rgb(b); return K.hex(A.map((v, i) => v + (B[i] - v) * t)); };

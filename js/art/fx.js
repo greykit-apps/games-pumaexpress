@@ -44,10 +44,11 @@
       if (p.layer !== layer) continue;
       const f = p.t / p.life;
       if (p.k === "smoke") {
-        const a = p.a * (1 - f) * (f < 0.1 ? f / 0.1 : 1);
-        g.fillStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},${a.toFixed(3)})`;
-        K.disc(g, p.x, p.y, p.r, p.r * 0.85);
-        if (p.r > 3) { g.fillStyle = `rgba(255,255,255,${(a * 0.18).toFixed(3)})`; K.disc(g, p.x - p.r * 0.3, p.y - p.r * 0.3, p.r * 0.45, p.r * 0.4); }
+        const a = p.a * (1 - f) * (f < 0.1 ? f / 0.1 : 1), d = K.dither(g, p.col.join(","), a);
+        if (!d) continue;
+        g.fillStyle = d; K.disc(g, p.x, p.y, p.r, p.r * 0.85);
+        /* its moonlit top: a lighter shade of the same, a step denser */
+        if (p.r > 3) { const hi = K.dither(g, p.col.map(v => Math.min(255, Math.round(v + (255 - v) * 0.35))).join(","), a * 0.7); if (hi) { g.fillStyle = hi; K.disc(g, p.x - p.r * 0.3, p.y - p.r * 0.3, p.r * 0.45, p.r * 0.4); } }
       } else if (p.k === "spark") {
         g.fillStyle = p.col; g.globalAlpha = 1 - f; g.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); g.globalAlpha = 1;
       } else if (p.k === "flash") {
@@ -60,10 +61,9 @@
         g.globalAlpha = 1;
       } else if (p.k === "column") {
         const h = p.s * 22 * Math.sin(Math.min(1, f * 1.6) * Math.PI * 0.5) * (1 - Math.max(0, f - 0.5) * 2);
-        g.fillStyle = `rgba(214,232,242,${(0.85 * (1 - f)).toFixed(3)})`;
-        K.rect(g, p.x - p.s * 2, p.y - h, p.s * 4, h);
-        K.disc(g, p.x, p.y - h, p.s * 3, p.s * 2);
-        g.fillStyle = `rgba(255,255,255,${(0.6 * (1 - f)).toFixed(3)})`; K.rect(g, p.x - p.s, p.y - h, p.s, h);
+        const w = K.dither(g, "214,232,242", 0.85 * (1 - f)), hi = K.dither(g, "255,255,255", 0.6 * (1 - f));
+        if (w) { g.fillStyle = w; K.rect(g, p.x - p.s * 2, p.y - h, p.s * 4, h); K.disc(g, p.x, p.y - h, p.s * 3, p.s * 2); }
+        if (hi) { g.fillStyle = hi; K.rect(g, p.x - p.s, p.y - h, p.s, h); }
       }
     }
   };

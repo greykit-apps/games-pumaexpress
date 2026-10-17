@@ -121,7 +121,9 @@
   }
   function titleKey(ev) {
     const k = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
-    if (k === "Enter" || k === " " || k === "Tab" || k === "Shift") return;
+    /* Tab goes round the title's own controls, never out of the page */
+    if (k === "Tab") { const f = UI.focusables($("title")); if (f.length) { ev.preventDefault(); const i = f.indexOf(document.activeElement); f[i < 0 ? 0 : (i + (ev.shiftKey ? -1 : 1) + f.length) % f.length].focus(); } return; }
+    if (k === "Enter" || k === " " || k === "Shift") return;
     const menu = document.querySelector("#title .pe-menu"), hit = menu && titleKeyButton(menu, k);
     if (hit) { ev.preventDefault(); titleAct(hit.dataset.act); return; }
     const row = (k === "ArrowLeft" || k === "ArrowRight") && document.activeElement && document.activeElement.closest(".pe-menu .util");
@@ -276,7 +278,7 @@
         case "won": SFX.play("won"); HUD.end("Port Clair!", `The art is home: ${E.paintings(S)} paintings`, "ok"); setTimeout(finish, 3600); break;
         case "over": SFX.play(e.why === "burst" ? "burst" : e.why === "abandon" ? "menu" : e.why === "practice" ? "good" : "over");
           if (e.why === "practice") { setTimeout(finish, 900); break; }
-          if (e.why !== "abandon") { HUD.end({ burst: "The boiler bursts", boiler: "The boiler gives out", motion: "The motion gives out", cut: "Off the rails", derail: "Off the rails", buffer: "Into the buffers", frontier: "Into the wolves' hands", dawn: "Dawn" }[e.why] || "The night is over", { burst: "Too much pressure, too long.", cut: "She ran onto the cut.", derail: "Too fast over the points.", dawn: "The fighters have her in daylight." }[e.why] || "", "danger"); setTimeout(finish, 2600); }
+          if (e.why !== "abandon") { const end = UI.ENDS[e.why]; HUD.end(end ? end[0] : "The night is over", end ? end[1] : "", "danger"); setTimeout(finish, 2600); }
           break;
       }
     }

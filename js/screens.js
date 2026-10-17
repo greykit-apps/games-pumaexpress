@@ -13,7 +13,7 @@
   const face = () => `<img class="px duc-face" src="${PX.HUD.face || PX.People.ducFace().toDataURL()}" width="80" height="80" alt="">`;
 
   /* ---- the sheet: a panel of its own over whatever was showing; popup, a window to one side ---- */
-  UI.open = (title, { tabs, html, onClick, onClose, onKey, back, tab = 0, wide = false, closable = true, popup = false, side = false, cls = "" }) => {
+  UI.open = (title, { tabs, html, foot, onClick, onClose, onKey, back, tab = 0, wide = false, closable = true, popup = false, side = false, cls = "" }) => {
     UI.close(true);
     const el = document.createElement("div");
     el.className = "pe-sheet " + (popup ? "pe-pop" : "full") + (side ? " side" : wide ? " wide" : "") + (tabs ? " tabbed" : "") + (cls ? " " + cls : "");
@@ -22,7 +22,7 @@
       el.innerHTML = '<div class="' + (popup ? "pe-win" : "sh-box") + '"><header class="sh-head">' + (back ? '<button data-back title="Back (Esc)">' + ICON_BACK + "Back</button>" : "") + "<h2>" + esc(title) + "</h2>" +
         (closable && !back && !popup ? '<button data-x title="Close (Esc)">' + ICON_X + "Close</button>" : "") + "</header>" +
         (tabs ? '<div class="sh-tabs" role="tablist" aria-label="' + esc(title) + '">' + tabs.map(([t], i) => '<button role="tab" id="tab-' + i + '" data-tab="' + i + '" aria-selected="' + (i === tab) + '" aria-controls="tabpanel" tabindex="' + (i === tab ? 0 : -1) + '">' + esc(t) + "</button>").join("") + "</div>" : "") +
-        '<div class="sh-body"' + (tabs ? ' id="tabpanel" role="tabpanel" aria-labelledby="tab-' + tab + '" tabindex="0"' : "") + '><div class="sh-in">' + (tabs ? tabs[tab][1] : html()) + "</div></div></div>";
+        '<div class="sh-body"' + (tabs ? ' id="tabpanel" role="tabpanel" aria-labelledby="tab-' + tab + '" tabindex="0"' : "") + '><div class="sh-in">' + (tabs ? tabs[tab][1] : html()) + "</div></div>" + (foot ? '<footer class="sh-foot">' + foot() + "</footer>" : "") + "</div>";
     };
     draw();
     const api = { refresh: () => { const b = el.querySelector(".sh-body"), y = b.scrollTop, f = document.activeElement && document.activeElement.dataset; draw(); el.querySelector(".sh-body").scrollTop = y; if (f) for (const k of ["set", "act", "d", "msg"]) if (f[k]) { const n = el.querySelector(`[data-${k}="${f[k]}"]`); if (n) n.focus({ preventScroll: true }); } }, close: () => UI.close(), el };
@@ -41,7 +41,7 @@
     document.body.appendChild(el);
     UI.sheet = { el, onClose, onKey, closable, back: back ? goBack : null, tabs: tabs ? setTab : null, tabAt: () => tab };
     for (const id of ["game", "title"]) { const n = document.getElementById(id); if (n) n.inert = true; }
-    (el.querySelector("[autofocus]") || el.querySelector(".sh-body .primary") || el.querySelector('[role="tab"][aria-selected="true"]') || el.querySelector(".sh-body button:not(:disabled)") || el.querySelector("button")).focus({ preventScroll: true });
+    (el.querySelector("[autofocus]") || el.querySelector(".sh-body .primary, .sh-foot .primary") || el.querySelector('[role="tab"][aria-selected="true"]') || el.querySelector(".sh-body button:not(:disabled)") || el.querySelector("button")).focus({ preventScroll: true });
     return api;
   };
   UI.close = quiet => {
@@ -59,7 +59,7 @@
     const box = n => { const r = n.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, r }; }, o = box(a);
     let best = null, bestS = Infinity;
     for (const n of root.querySelectorAll("button:not(:disabled), summary, input")) {
-      if (n === a || n.offsetParent === null || n.getAttribute("role") === "tab" || n.closest(".sh-head")) continue;
+      if (n === a || n.offsetParent === null || (n.closest("details:not([open])") && n.tagName !== "SUMMARY") || n.getAttribute("role") === "tab" || n.closest(".sh-head")) continue;
       const b = box(n), dx = b.x - o.x, dy = b.y - o.y, along = dx * d[0] + dy * d[1];
       if (along <= (d[0] ? o.r.width : o.r.height) / 4) continue;
       const s = along + Math.abs(d[0] ? dy : dx) * 3;
@@ -69,6 +69,9 @@
     best.focus({ preventScroll: true }); best.scrollIntoView({ block: "nearest" });
     return true;
   };
+  /* what Tab can reach: shown, and not shut inside a closed <details> (Chromium gives those an offsetParent) */
+  UI.focusables = root => [...root.querySelectorAll('button:not(:disabled), input, summary, a[href], [tabindex]:not([tabindex="-1"])')]
+    .filter(n => n.offsetParent !== null && !(n.closest("details:not([open])") && n.tagName !== "SUMMARY") && (!n.checkVisibility || n.checkVisibility()));
   UI.key = ev => {
     const s = UI.sheet;
     if (s.onKey && s.onKey(ev)) return;
@@ -77,7 +80,7 @@
     const inInput = ev.target.closest && ev.target.closest("input");
     if (ev.key.startsWith("Arrow") && !(inInput && (ev.key === "ArrowLeft" || ev.key === "ArrowRight")) && UI.walk(s.el, ev.key)) { ev.preventDefault(); return; }
     if (ev.key === "Tab") {
-      const f = [...s.el.querySelectorAll('button:not(:disabled), input, summary, a[href], [tabindex]:not([tabindex="-1"])')].filter(n => n.offsetParent !== null);
+      const f = UI.focusables(s.el);
       if (!f.length) return;
       ev.preventDefault();
       const i = f.indexOf(document.activeElement), d = ev.shiftKey ? -1 : 1;
@@ -127,35 +130,35 @@
   };
 
   /* ---- pause ---- */
-  const KEYS_CAB = () => (PX.aid("direct") ? [["W S", "throttle"], ["X Z", "brake"], ["F", "door"], ["G", "shovel"], ["H", "whistle"], ["E Q", "reverser"]] : [["← →", "the controls"], ["↑ ↓", "work it"], ["Space", "use it"]]).concat([["1 2", "guns"], ["3", "cab"], ["4", "map"], ["L", "aids"]]);
+  const KEYS_CAB = () => (PX.aid("direct") ? [["W S", "throttle"], ["X Z", "brake"], ["F", "door"], ["G", "shovel"], ["H", "whistle"], ["V", "valve"], ["E Q", "reverser"]] : [["← →", "the controls"], ["↑ ↓", "work it"], ["Space", "use it"]]).concat([["1 2", "guns"], ["3", "cab"], ["4", "map"], ["L", "aids"]]);
+  /* the replies, each with a key: the one that paused resumes, 4 is the map as it is on the line */
+  const REPLIES = [["resume", "P", "Resume"], ["map", "4", "The map"], ["settings", "S", "Settings"], ["help", "?", "Help"], ["leave", "Q", "Main menu"]];
   UI.pause = () => {
     const S = PX.game.S;
     /* a telegram from the line: the night so far on pasted tape, the replies below it */
     const tape = S.practice ? ["Practice stop", "Nothing on the line stop", "Nothing saved stop"]
-      : [`Halted ${PX.hhmm(S.t)} stop ${C.DIFF[S.diff].name} stop`, `${num(S.score)} points stop ${E.paintings(S)} paintings aboard stop`, `${Math.round(S.stats.miles)} miles run stop dawn at ${PX.hhmm(C.DAWN)} stop`];
+      : [`Halted ${PX.hhmm(S.t)} stop ${C.DIFF[S.diff].name} stop`, `Score ${num(S.score)} stop ${E.paintings(S)} paintings aboard stop`, `${Math.round(S.stats.miles)} miles run stop dawn at ${PX.hhmm(C.DAWN)} stop`];
     UI.open("Paused", { popup: true, cls: "pe-tg",
       html: () => `<dl class="tg-form"><div><dt>Office</dt><dd>The cab</dd></div><div><dt>From</dt><dd>Duc</dd></div><div><dt>Handed in</dt><dd class="num">${PX.hhmm(S.t)}</dd></div></dl>
         <div class="tg-tape">${tape.map(t => `<p>${esc(t)}</p>`).join("")}</div>
         <p class="tg-reply" aria-hidden="true">Reply</p>
-        <div class="col"><button data-act="resume" class="primary">Resume</button>
-        ${S.practice ? "" : `<button data-act="map">The map</button>`}
-        <button data-act="settings">Settings</button><button data-act="help">Help</button>
-        <button data-act="leave">Main menu</button></div>
+        <div class="col">${REPLIES.filter(([a]) => !(S.practice && a === "map")).map(([a, k, n]) => `<button data-act="${a}"${a === "resume" ? ' class="primary"' : ""}><kbd>${k}</kbd><span class="lbl">${n}</span></button>`).join("")}</div>
         <div class="note keys legend">${KEYS_CAB().map(([k, w]) => `<span class="k">${k.split(" ").map(x => `<kbd>${x}</kbd>`).join(" ")}</span><span>${w}</span>`).join("")}</div>`,
-      onClick: async b => {
-        const a = b.dataset.act;
-        if (a === "resume") UI.close();
-        if (a === "map") { UI.close(); PX.game.setView("map"); }
-        if (a === "settings") { UI.close(true); UI.settings(() => UI.pause()); }
-        if (a === "help") { UI.close(true); UI.help(0, () => UI.pause()); }
-        if (a === "leave") {
-          if (S.practice) { UI.close(true); PX.game.toTitle(); return; }
-          if (PX.prefs.resume) { UI.close(true); PX.game.leave(); return; }
-          if (await UI.ask("Abandon this night? Its score still counts for the high scores.", "Abandon")) { UI.close(true); PX.game.abandon(); }
-        }
-      },
+      onKey: ev => { const k = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key, r = REPLIES.find(x => x[1].toLowerCase() === k); if (!r || (S.practice && r[0] === "map")) return false; ev.preventDefault(); act(r[0]); return true; },
+      onClick: b => act(b.dataset.act),
       onClose: () => PX.game.unpause(),
     });
+    async function act(a) {
+      if (a === "resume") UI.close();
+      if (a === "map") { UI.close(); PX.game.setView("map"); }
+      if (a === "settings") { UI.close(true); UI.settings(() => UI.pause()); }
+      if (a === "help") { UI.close(true); UI.help(0, () => UI.pause()); }
+      if (a === "leave") {
+        if (S.practice) { UI.close(true); PX.game.toTitle(); return; }
+        if (PX.prefs.resume) { UI.close(true); PX.game.leave(); return; }
+        if (await UI.ask("Abandon this night? Its score still counts for the high scores.", "Abandon")) { UI.close(true); PX.game.abandon(); }
+      }
+    }
   };
 
   /* the line ahead, cut from the map itself: the train, the next station and the bridge before it, so the
@@ -216,6 +219,17 @@
     cut: "She ran onto a cut in the line and went off the rails.", derail: "She took the points too fast and left the rails.", buffer: "She hit the buffers at the end of a dead line.",
     frontier: "She ran into the Wolf frontier, and the wolves have the train again.", dawn: "Dawn came before the coast, and in daylight their fighters had her.", abandon: "Abandoned.", practice: "Practice over.",
   };
+  /* how each night is lost: the banner over its scene, the line under it, and Duc's word for next time */
+  UI.ENDS = {
+    burst: ["The boiler bursts", "Too much pressure, too long.", "Watch the steam gauge. Past the red line, blow off with the valve, or shut the door and let the fire settle."],
+    boiler: ["The boiler gives out", "She was hurt once too often.", "Keep her under the red line and the guns warm: every hit tells. Wire ahead for fitters when she's hurt."],
+    motion: ["The motion gives out", "The running gear is in pieces.", "Take the turnouts slowly, and never touch the reverser while she rolls. Wire ahead for fitters before it goes."],
+    cut: ["Off the rails", "She ran onto the cut.", "My report names every cut. Set the points round it with the whistle, or stop short."],
+    derail: ["Off the rails", "Too fast over the points.", `Ease her under ${C.POINTS.rough} mph before a turnout when the points are set off the straight.`],
+    buffer: ["Into the buffers", "The end of a dead line.", "Look at the map before you whistle: the repeater shows the way the next points lie."],
+    frontier: ["Into the wolves' hands", "She ran over the frontier.", "East is the Wolf Empire. Whistle the points west, toward the coast."],
+    dawn: ["Dawn", "The fighters have her in daylight.", "Fewer stops, and the throttle open on the straight. Wire the Resistance to take the stations ahead, so they don't stop us."],
+  };
   const TALLY = [["stations", "Stations taken"], ["bridges", "Bridges cleared"], ["guards", "Wolves shot at the stations"], ["boats", "Gunboats sunk"], ["planes", "Fighters shot down"], ["raids", "Air raids"]];
   const tally = S => `<table class="tally">${TALLY.filter(([k]) => S.stats[k]).map(([k, n]) => `<tr><td>${esc(n)}</td><td class="num">${S.stats[k]}</td></tr>`).join("")}<tr><td>Miles run</td><td class="num">${Math.round(S.stats.miles)}</td></tr></table>`;
   /* three of the paintings themselves, with their titles: home, or still aboard */
@@ -224,55 +238,59 @@
     if (!n) return "";
     return `<div class="pics"><p class="who">${won ? "Home tonight, among them" : "Still aboard"}</p><div class="pics-row">${Array.from({ length: n }, (_, i) => `<figure><img class="px" src="${PX.Paintings.picture(i, 64, 48).toDataURL()}" width="128" height="96" alt=""><figcaption>${esc(PX.Paintings.title(i))}</figcaption></figure>`).join("")}</div></div>`;
   };
+  const miles = n => `${n} ${n === 1 ? "mile" : "miles"}`;
   UI.gameOver = S => {
-    const why = S.end ? S.end.why : "abandon", won = why === "won";
+    const why = S.end ? S.end.why : "abandon", won = why === "won", end = UI.ENDS[why];
     if (why === "practice") return UI.practiceOver(S);
     const rank = C.rankFor(S.score), next = C.RANKS.find(([at]) => at > S.score), can = PX.qualifies(S.score);
     const pos = PX.scores().filter(e => e.score >= S.score).length;
     const place = can ? (pos === 0 ? "A new best score" : `Number ${pos + 1} on the table`) : "";
     let placed = -1, naming = can, skipped = false;
-    const title = won ? "Port Clair: the art is home" : "The night is over";
-    const left = () => `<div><h3 class="mname big${won ? " ok" : why === "abandon" ? " dim" : ""}">${num(S.score)} points</h3>
-        <p class="meta">${esc(WHY[why] || "")} ${PX.hhmm(S.t)} · ${esc(C.DIFF[S.diff].name)}</p>
-        ${won ? `<p class="closeby">${E.paintings(S)} of ${C.WAGONS * C.PAINTINGS} paintings home · +${num(S.bonus)} for them</p>` : `<p class="closeby">${E.paintings(S)} paintings aboard · ${Math.round(S.stats.miles)} miles from Velmont</p>`}
+    /* the head says how the night ended; the paintings lead, the score follows */
+    const title = won ? "Port Clair: the art is home" : end ? end[0] : why === "abandon" ? "Abandoned" : "The night is over";
+    const art = E.paintings(S), all = C.WAGONS * C.PAINTINGS;
+    const left = () => `<div>${won
+        ? `<h3 class="mname big ok">${art} of ${all} paintings home</h3>`
+        : `<h3 class="mname big${why === "abandon" ? " dim" : ""}">${art} ${art === 1 ? "painting" : "paintings"} still aboard</h3>`}
+        <p class="meta">${esc(end ? end[1] : WHY[why] || "")} ${esc(miles(Math.round(S.stats.miles)))} from Velmont · ${PX.hhmm(S.t)} · ${esc(C.DIFF[S.diff].name)}</p>
+        ${end ? `<div class="duc-says tip">${face()}<div><p class="who">Duc, for next time</p><p>${esc(end[2])}</p></div></div>` : ""}
         ${pics(S, won)}
-        <p class="rank">Rated <b>${esc(rank)}</b></p>${next ? `<p class="note nextrank">Next: ${esc(next[1])}, at ${num(next[0])} points</p>` : ""}${tally(S)}</div>`;
-    const ends = `<div class="row end"><button data-act="again" class="primary">Run again</button><button data-act="title">Title</button></div>`;
+        <p class="tally-score">Score <b class="num">${num(S.score)}</b>${won && S.bonus ? `<span class="note"> · ${num(S.bonus)} of it for the paintings</span>` : ""}</p>
+        <p class="rank">Rated <b>${esc(rank)}</b></p>${next ? `<p class="note nextrank">Next: ${esc(next[1])}, at a score of ${num(next[0])}</p>` : ""}${tally(S)}</div>`;
+    const right = () => PX.scores().length ? `<div>${!naming && place && !skipped ? `<p class="placed">${place}</p>` : ""}<h3>High scores</h3>${scoresTable(PX.scores(), placed)}</div>` : "";
+    /* what to do next stays at the foot, in view however tall the sheet: the name for the table, then Run again */
+    const foot = () => naming
+      ? `<div class="name-row"><p class="placed">${place}</p><div class="row"><label for="pe-name">Your name for the table</label><input id="pe-name" maxlength="14" value="${esc(PX.lastName())}" placeholder="Puma" autocomplete="off" autofocus><button data-act="save" class="primary">Save</button><button data-act="skip">Skip</button></div></div>`
+      : `<div class="row end">${skipped ? `<p class="note">Not saved to the table.</p>` : ""}<button data-act="again" class="primary">Run again</button><button data-act="title">Title</button></div>`;
     /* the scene of the ending stays in view, the sheet beside it; an abandoned night has none */
     const side = PX.Ending.has(S);
-    UI.open(title, { wide: true, side, closable: false,
-      html: () => `<div class="report">${left()}
-        <div>${naming ? `<p class="placed">${place}</p><p>Your name for the table:</p><div class="row"><label class="sr" for="pe-name">Your name</label><input id="pe-name" maxlength="14" value="${esc(PX.lastName())}" placeholder="Puma" autocomplete="off" autofocus><button data-act="save" class="primary">Save</button><button data-act="skip">Skip</button></div><p class="note">Left blank, it is saved as Puma.</p>` :
-          `${skipped ? `<p class="placed">${place}</p><p class="note">Not saved to the table.</p>` : ""}${!skipped || PX.scores().length ? `<h3>High scores</h3>${scoresTable(PX.scores(), placed)}` : ""}`}</div></div>
-        ${naming ? "" : ends}`,
+    const sheet = () => UI.open(title, { wide: true, side, closable: false,
+      html: () => `<div class="report">${left()}${right()}</div>`, foot,
       onKey: ev => { if (naming && ev.key === "Enter" && document.activeElement && document.activeElement.id === "pe-name") { ev.preventDefault(); save(); return true; } return false; },
-      onClick: (b, api) => {
+      onClick: b => {
         const a = b.dataset.act;
         if (a === "save") save();
-        if (a === "skip") { naming = false; skipped = true; api.refresh(); }
+        if (a === "skip") { naming = false; skipped = true; sheet(); }
         if (a === "again") { UI.close(true); PX.game.start(S.diff); }
         if (a === "title") { UI.close(true); PX.game.toTitle(); }
       },
     });
+    sheet();
     function save() {
       const i = document.getElementById("pe-name"), name = (i && i.value.trim().slice(0, 14)) || "Puma";
       PX.setLastName(name);
-      placed = PX.addScore({ name, score: S.score, won, at: Date.now(), diff: C.DIFF[S.diff].name, rank, paintings: E.paintings(S), code: !!S.cheated });
+      placed = PX.addScore({ name, score: S.score, won, at: Date.now(), diff: C.DIFF[S.diff].name, rank, paintings: art, code: !!S.cheated });
       naming = false;
-      UI.close(true);
-      UI.open(title, { wide: true, side, closable: false,
-        html: () => `<div class="report">${left()}<div>${place ? `<p class="placed">${place}</p>` : ""}<h3>High scores</h3>${scoresTable(PX.scores(), placed)}</div></div>${ends}`,
-        onClick: b => { if (b.dataset.act === "again") { UI.close(true); PX.game.start(S.diff); } if (b.dataset.act === "title") { UI.close(true); PX.game.toTitle(); } },
-      });
+      sheet();
     }
   };
   UI.practiceOver = S => UI.open("Practice over", {
     closable: false,
-    html: () => `<h3 class="mname big ok">${num(S.score)} points</h3><p class="meta">${S.stats.guards ? `${S.stats.guards} wolves shot · ` : ""}${S.stats.boats ? `${S.stats.boats} gunboats sunk · ` : ""}${S.stats.planes ? `${S.stats.planes} fighters down · ` : ""}the train ${E.wear(S) < 20 ? "hardly touched" : `${Math.round(E.wear(S))}% hurt`}</p>
-      <div class="row end"><button data-act="again" class="primary">Again</button><button data-act="other">Another fight</button><button data-act="title">Title</button></div>`,
+    html: () => `<h3 class="mname big ok">Score ${num(S.score)}</h3><p class="meta">${S.stats.guards ? `${S.stats.guards} wolves shot · ` : ""}${S.stats.boats ? `${S.stats.boats} gunboats sunk · ` : ""}${S.stats.planes ? `${S.stats.planes} fighters down · ` : ""}the train ${E.wear(S) < 20 ? "hardly touched" : `${Math.round(E.wear(S))}% hurt`}</p>`,
+    foot: () => `<div class="row end"><button data-act="again" class="primary">Again</button><button data-act="other">Another fight</button><button data-act="title">Title</button></div>`,
     onClick: b => { const a = b.dataset.act; UI.close(true); if (a === "again") PX.game.practice(S.practice); if (a === "other") { PX.game.toTitle(); UI.practice(); } if (a === "title") PX.game.toTitle(); },
   });
-  const scoresTable = (list, mark = -1) => list.length ? `<table class="scores"><tr><th></th><th>Name</th><th class="num">Score</th><th>Night</th><th>Rated</th></tr>${list.map((e, i) => `<tr${i === mark ? ' class="mine"' : ""}><td class="num">${i + 1}</td><td>${esc(e.name)}</td><td class="num">${num(e.score)}</td><td>${e.won ? "home" : "lost"}, ${esc(e.diff)}${e.code ? " · code" : ""}</td><td>${esc(e.rank || "")}</td></tr>`).join("")}</table>` : `<p class="note">No scores yet: run the train, and the best ten are kept here, in this browser.</p>`;
+  const scoresTable = (list, mark = -1) => list.length ? `<table class="scores"><tr><th></th><th>Name</th><th class="num">Score</th><th>Night</th><th>Rated</th></tr>${list.map((e, i) => `<tr${i === mark ? ' class="mine"' : ""}><td class="num">${i + 1}</td><td>${esc(e.name)}</td><td class="num">${num(e.score)}</td><td>${e.won ? "home" : "lost"}, ${esc(e.diff)}${e.code ? " · code" : ""}</td><td>${esc(e.rank || "")}</td></tr>`).join("")}</table>` : `<p class="note">Not a name on the table yet. The best ten nights are kept here, in this browser.</p>`;
   UI.scores = () => UI.open("High scores", {
     html: () => scoresTable(PX.scores()) + (PX.scores().length ? `<p class="note">The best ten, kept in this browser.</p>` : `<div class="row end"><button data-act="new" class="primary">New game</button></div>`),
     onClick: b => { if (b.dataset.act === "new") { UI.close(true); UI.newGame(); } },
@@ -354,7 +372,7 @@
   ];
   UI.help = (tab = 0, after) => UI.open("Help", { wide: true, tab, tabs: UI.helpTabs(), onClose: after });
   UI.aboutHTML = () => `<p>Steal a train full of looted art and run it across occupied territory. Coordinate with the Resistance and fight your way to the coast before dawn.</p>
-    <p>Accolade's <i>The Train: Escape to Normandy</i> (1987) was one of my favorite games for the Commodore 64. It plays like a boardgame and is AFAIK the first Train Simulator. My interpretation of it includes many field assistance for modern players that make the game much easier, but I think I kept the spirit intact.</p>
+    <p>Accolade's <i>The Train: Escape to Normandy</i> (1987) was one of my favorite games for the Commodore 64. It plays like a boardgame and is AFAIK the first Train Simulator. My interpretation of it adds Field aids for modern players that make the game much easier, but I think I kept the spirit intact.</p>
     <p class="gk-credit">${CREDIT}</p>`;
   UI.about = after => UI.open("About", { html: UI.aboutHTML, onClose: after });
 })();

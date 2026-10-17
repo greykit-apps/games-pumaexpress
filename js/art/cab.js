@@ -125,13 +125,14 @@
       g.fillStyle = ramp[PX.clamp(Math.round(2 - lv * 1.8 + (rim ? 0 : 0.6)), 0, 4)]; g.fillRect(x + i, y + j, 1, 1);
     }
   }
-  /* a little brass plate with its name stamped in */
+  /* a little name plate: black enamel in a brass rim, the letters raised in polished brass, so it reads in the dark */
+  const ENAMEL = "#16110b", SHEEN = "#d9b66c", plates = [];
   function plate(g, x, y, text) {
     const w = K.text5w(text) + 6, h = 11;
     x = Math.round(x - w / 2);
-    K.rect(g, x, y, w, h, INK); K.rect(g, x + 1, y + 1, w - 2, h - 2, M.brass[2]); K.rect(g, x + 1, y + 1, w - 2, 1, M.brass[0]); K.rect(g, x + 1, y + h - 2, w - 2, 1, M.brass[3]);
-    K.px(g, x + 2, y + 2, M.brass[4]); K.px(g, x + w - 3, y + 2, M.brass[4]);
-    K.text5(g, text, x + 3, y + 2, M.brass[4]);
+    plates.push([text, x + 3, y + 2]);
+    K.rect(g, x, y, w, h, INK); K.rect(g, x + 1, y + 1, w - 2, h - 2, M.brass[2]); K.rect(g, x + 2, y + 2, w - 4, h - 4, ENAMEL); K.rect(g, x + 1, y + 1, w - 2, 1, M.brass[1]);
+    K.text5(g, text, x + 3, y + 2, M.brass[0]);
   }
 
   /* a tag hanging from a pull: the plate, in the light where it hangs */
@@ -139,14 +140,15 @@
     const w = K.text5w(text) + 6, h = 11, B = M.brass.map(q => lit(q, m));
     x = Math.round(x - w / 2); y = Math.round(y);
     K.rect(g, x + Math.round(w / 2), y - 2, 1, 2, INK);
-    K.rect(g, x, y, w, h, INK); K.rect(g, x + 1, y + 1, w - 2, h - 2, B[2]); K.rect(g, x + 1, y + 1, w - 2, 1, B[0]); K.rect(g, x + 1, y + h - 2, w - 2, 1, B[3]);
-    K.text5(g, text, x + 3, y + 2, B[4]);
+    K.rect(g, x, y, w, h, INK); K.rect(g, x + 1, y + 1, w - 2, h - 2, B[2]); K.rect(g, x + 2, y + 2, w - 4, h - 4, lit(ENAMEL, m)); K.rect(g, x + 1, y + 1, w - 2, 1, B[1]);
+    K.text5(g, text, x + 3, y + 2, B[0]);
   }
 
   /* ---- the painted cab: everything that does not move ---- */
   function paintCab(Lo, fire) {
     const { W, H, X, Y, R, winH, u } = Lo;
     const c = K.mk(W, H), g = c.getContext("2d");
+    plates.length = 0;
     /* the cab sides below the window: steel sheet in the engine's green, seams and rivets */
     for (let y = winH; y < H; y++) for (let x = 0; x < W; x++) {
       /* sheet steel: a soft sheen across each panel, a little dither, darker toward the floor */
@@ -368,6 +370,8 @@
     const lights = Lo.lamps.slice();
     if (fire) lights.push(Lo.fire);
     K.relight(c, Lo.amb, lights);
+    /* the plates' raised letters are polished: they keep a sheen of the lamp however dark their corner of the cab */
+    for (const [t, x, y] of plates) K.text5(g, t, x, y, SHEEN);
     /* the window: cut out, so the country shows through; the backhead's top and the lamp stay in front of it */
     cutWindow(c, Lo);
     return c;
@@ -415,9 +419,9 @@
     if (red) for (let a = ang(red / max); a <= ang(1) + 0.001; a += 0.02) for (let rr = fr - 4; rr <= fr - 2; rr++) K.px(g, x + Math.cos(a) * rr, y + Math.sin(a) * rr, "#c0311c");
     const minor = step ? max / (step / 4) : 20;
     for (let i = 0; i <= minor; i++) {
-      const f = i / minor, a = ang(f), big = i % 4 === 0, r0 = fr - (big ? 6 : 3), r1 = fr - 2;
+      const f = i / minor, a = ang(f), big = i % 4 === 0, r0 = fr - (big ? 5 : 3), r1 = fr - 2;
       K.line(g, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, red && f * max >= red ? "#a52a18" : "#2a241c");
-      if (big && step && r >= 20) { const v = String(Math.round(f * max / (max >= 300 ? 100 : 1))); K.text3(g, v, Math.round(x + Math.cos(a) * (fr - 11) - K.text3w(v) / 2), Math.round(y + Math.sin(a) * (fr - 11) - 2), "#3a3226"); }
+      if (big && step && r >= 20) { const v = String(Math.round(f * max / (max >= 300 ? 100 : 1))); K.text3(g, v, Math.round(x + Math.cos(a) * (fr - 9) - K.text3w(v) / 2), Math.round(y + Math.sin(a) * (fr - 9) - 2), "#3a3226"); }
     }
   }
 

@@ -21,7 +21,7 @@
     HUD.face = url(PX.People.ducFace());
     el.innerHTML = `
       <div class="hp" id="h-status">
-        <div class="hs-left"><span class="num h-score">0</span><span class="h-code" hidden title="Konami code: coal, water and a mended engine, and no more harm this night">Code</span><span class="h-clock"><b class="num">21:00</b><span class="h-dawn"></span></span></div>
+        <div class="hs-left"><span class="h-sc"><span class="lbl">Score</span><span class="num h-score">0</span></span><span class="h-code" hidden title="Konami code: coal, water and a mended engine, and no more harm this night">Code</span><span class="h-clock"><b class="num">21:00</b><span class="h-dawn"></span></span></div>
         <div class="hs-right">
           ${C.PARTS.slice(0, 3).map(([k, n]) => `<div class="h-row" data-p="${k}" title="${esc(n)}"><span class="lbl">${esc({ motion: "Gear" }[k] || n)}</span>${bar(10)}</div>`).join("")}
           <div class="h-row h-art"><span class="lbl">Paintings</span><b class="num h-paint">48</b></div>
@@ -74,6 +74,16 @@
     whistle: "<kbd>Space</kbd> once north, twice straight on, three times south",
   };
   const DIRECT = { throttle: "W S", brake: "X Z", reverser: "E Q", door: "F", shovel: "G", valve: "V", whistle: "H" };
+  /* the Readings aid: the three dials in figures, rounded as a driver would read them, and the control in hand's setting */
+  const readings = S => {
+    const psi = Math.round(E.psi(S) / 5) * 5, hot = psi >= C.LOCO.red;
+    return `<span class="rd"><span class="lbl">Steam</span><b class="num${hot ? " bad" : ""}">${psi}</b><i>psi</i></span><span class="rd"><span class="lbl">Speed</span><b class="num">${Math.round(Math.abs(S.tr.v))}</b><i>mph</i></span><span class="rd"><span class="lbl">Heat</span><b class="num">${Math.round(S.cab.T / 5) * 5}</b><i>°F</i></span><span class="sep"></span>`;
+  };
+  const setting = (S, ctl) => {
+    const c = S.cab, pct = v => `${Math.round(v * 10) * 10}%`;
+    const v = { throttle: pct(c.thr), brake: pct(c.brake), reverser: c.rev > 0 ? "forward" : c.rev < 0 ? "back" : "mid", door: c.door ? "open" : "shut", valve: c.valve ? "blowing" : "", shovel: "", whistle: "" }[ctl];
+    return v ? ` <em class="set${/\d/.test(v) ? " num" : ""}">${v}</em>` : "";
+  };
 
   /* ---- every frame ---- */
   HUD.draw = (S, ui, now) => {
@@ -90,8 +100,8 @@
       set(el.querySelector(`[data-p="${k}"] .h-bar`), "p" + k, v, (e, n) => { e.className = "h-bar" + (n >= 8 ? " crit" : n >= 5 ? " high" : ""); [...e.children].forEach((i, j) => i.classList.toggle("on", j < n)); e.setAttribute("aria-label", `${n * 10}% damaged`); });
     }
     set(el.querySelector(".h-paint"), "paint", E.paintings(S), (e, v) => { e.textContent = v; e.parentNode.classList.toggle("high", v < 40); });
-    /* a practice fight never runs the engine, so its coal and water cannot move: leave them off */
-    set(el.querySelector(".hs-right"), "practice", !!S.practice, (e, v) => { e.querySelectorAll(".h-sup").forEach(r => { r.hidden = v; }); });
+    /* a practice fight never runs the engine and carries no paintings, so its coal, water and pictures cannot move: leave them off */
+    set(el.querySelector(".hs-right"), "practice", !!S.practice, (e, v) => { e.querySelectorAll(".h-sup, .h-art").forEach(r => { r.hidden = v; }); });
     for (const k of ["coal", "water"]) {
       const v = Math.round(S.cab[k] / C.LOCO[k] * 20) * 5;
       set(el.querySelector(`[data-g="${k}"]`), "g" + k, v, (e, n) => { e.firstChild.style.width = n + "%"; e.className = "h-gauge" + (n <= 20 ? " crit" : n <= 40 ? " high" : ""); e.setAttribute("aria-label", `${k} ${n}%`); });
@@ -108,11 +118,11 @@
     set($("h-ahead"), "aheadOn", showAhead, (e, v) => { e.hidden = !v; });
     if (showAhead && now - (HUD.aheadAt || 0) > 250) { HUD.aheadAt = now; ahead(S); }
     /* the cab's control, named */
-    const ctl = scene === "cab" && S.phase === "run" ? PX.Input.sel() : null;
-    set(el.querySelector(".h-ctl"), "ctl", `${ctl}|${!!ui.aids.direct}`, (e) => {
+    const ctl = scene === "cab" && S.phase === "run" ? PX.Input.sel() : null, rd = ctl && ui.aids.readings ? readings(S, ctl) : "";
+    set(el.querySelector(".h-ctl"), "ctl", `${ctl}|${!!ui.aids.direct}|${rd}`, (e) => {
       if (!ctl) { e.hidden = true; return; }
       e.hidden = false;
-      e.innerHTML = `<b>${esc(PX.Cab.NAMES[ctl])}</b> <span>${CTL[ctl]}</span>${ui.aids.direct ? ` <span class="dk">${DIRECT[ctl].split(" ").map(k => `<kbd>${k}</kbd>`).join("")}</span>` : ""}`;
+      e.innerHTML = `${rd}<b>${esc(PX.Cab.NAMES[ctl])}</b>${rd ? setting(S, ctl) : ""} <span>${CTL[ctl]}</span>${ui.aids.direct ? ` <span class="dk">${DIRECT[ctl].split(" ").map(k => `<kbd>${k}</kbd>`).join("")}</span>` : ""}`;
     });
     set(el.querySelector(".h-fast"), "fast", !!ui.fast, (e, v) => { e.hidden = !v; });
     const ms = el.querySelector(".h-mapside");
@@ -154,7 +164,7 @@
         .map(([i, n]) => `<span>${i}${n}</span>`).join("");
     });
     const html = `<h2>The line</h2>
-      <p class="h-mvst">${PX.hhmm(S.t)} · ${S.t < C.DAWN ? `dawn in ${Math.floor((C.DAWN - S.t) / 60)}h${String(Math.floor((C.DAWN - S.t) % 60)).padStart(2, "0")}` : "after dawn"} · ${Math.round(S.stats.miles)} miles run</p>
+      <p class="h-mvst">${PX.hhmm(S.t)} · ${S.t < C.DAWN ? `dawn in ${Math.floor((C.DAWN - S.t) / 60)}h${String(Math.floor((C.DAWN - S.t) % 60)).padStart(2, "0")}` : "after dawn"} · ${Math.round(S.stats.miles)} ${Math.round(S.stats.miles) === 1 ? "mile" : "miles"} run</p>
       <div class="h-kr"><span>Stations taken</span><b class="num">${S.stats.stations}</b></div>
       <div class="h-kr"><span>Bridges cleared</span><b class="num">${S.stats.bridges}</b></div>
       <div class="h-kr"><span>Fighters down</span><b class="num">${S.stats.planes}</b></div>

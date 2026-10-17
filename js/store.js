@@ -17,10 +17,11 @@
     ["route", "Route on the map", "The map lights the way the points will take you, to the coast or to wherever it ends."],
     ["planner", "Points from the map", "Click a junction on the map to set its points, as well as by whistle."],
     ["ahead", "Line ahead", "A panel with the next points, station and bridge, how far, and whose."],
+    ["readings", "Readings", "The steam, the speed and the heat written out in figures under the cab, and where the control in hand is set."],
     ["gunnery", "Gunnery help", "Brackets on fighters in range that light when the sight is on them; where a shell laid now would come down; Duc's way up the platform."],
     ["alarm", "Battle stations", "An air raid takes you straight to the gun that faces it."],
     ["fast", "Fast running", "Hold Shift on a quiet stretch and the night runs four times as fast."],
-    ["dawn", "Soft dawn", "Dawn does not end the run: the fighters come thicker and every minute of daylight costs ten points."],
+    ["dawn", "Soft dawn", "Dawn does not end the run: the fighters come thicker and every minute of daylight takes ten off the score."],
   ];
   PX.AIDS = { field: {}, classic: {} };
   for (const [k] of PX.AID_LIST) { PX.AIDS.field[k] = true; PX.AIDS.classic[k] = false; }
