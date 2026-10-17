@@ -4,7 +4,7 @@
 
 **Play:** [greykit.com/games/pumaexpress](https://greykit.com/games/pumaexpress/)
 
-![The title: the train running west through the night under the moon, with the menu](screenshots/title.png)
+![The title: the train running west over a stone viaduct under the moon, a hilltop town behind, her smoke rolling back, with the menu](screenshots/title.png)
 
 ## How it plays
 
