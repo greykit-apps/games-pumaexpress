@@ -28,7 +28,8 @@ What the game is meant to be is in [PRODUCT.md](PRODUCT.md), and how it looks in
 | `js/art/mapart.js` | the map, a driver's working map in dark paper and pale ink |
 | `js/art/ending.js` | the end of the night: the train standing at Port Clair, or where the night was lost; and the forty-eight paintings, each drawn, each titled |
 | `js/art/people.js`, `js/art/people2.js`, `js/art/fx.js` | Duc, the wolves and your paws; smoke, sparks, tracer and fire |
-| `js/render.js`, `js/hud.js` | which scene is showing (and the title's picture), and the panels over it |
+| `js/art/title.js` | the title's picture: the train running west across the night, the town on the crest, the river, the viaduct, her smoke |
+| `js/render.js`, `js/hud.js` | which scene is showing, and the panels over it |
 | `js/sfx.js` | Web Audio: the engine, the whistle, the guns, the title tune |
 | `js/store.js`, `js/input.js`, `js/screens.js`, `js/main.js` | saves and the aids, controls, the sheets, and the loop |
 | `tools/lib.js` | loads the engine headless, with no document, canvas or sound, for `sim-check.js` |
@@ -36,8 +37,9 @@ What the game is meant to be is in [PRODUCT.md](PRODUCT.md), and how it looks in
 | `tools/stamp-assets.js` | stamps each script and stylesheet URL in `index.html` with its content hash (`--check` only reports) |
 | `tools/check-assets.js` | every file the page and the manifest name exists (games-meta STANDARD.md §10) |
 | `tools/make-icons.js` | `icon.svg`, the favicons and the home-screen icon (also the GitLab avatar), from one 40×40 drawing of the engine |
-| `tools/og.html` | the share card, `og.png`, drawn from the title's own picture; open it over http and save the canvas (instructions inside) |
+| `tools/og.html` | the share card, `og.png`, drawn from the title's own picture |
 | `screenshots/` | the pictures in the README, at twice the 640×360 play screen |
+| `tools/shots.mjs` | draws `screenshots/` and `og.png` in headless Chrome from a local server; run it after anything they show changes (instructions inside) |
 
 ## Before you commit
 
@@ -64,7 +66,7 @@ index.html?play=<0-2>&seed=<n>
 - `practice=station`, `practice=air` or `practice=bridge` opens one fight on its own.
 - `view=cab`, `front`, `rear` or `map` picks the view; `v=<mph>` sets her running; `t=<minutes on from the midnight before the night>` sets the clock (22:30 is 1350, first light 1770, dawn 1920); `raid=1` brings fighters at once.
 - `pause=1` opens on the pause menu.
-- `end=won`, `dawn`, `burst`, `boiler`, `motion`, `cut`, `derail`, `buffer` or `frontier` ends the night at once, to see its scene and the end sheet beside it (pair `dawn` with `t=1925` for its daylight).
+- `end=won`, `dawn`, `burst`, `boiler`, `motion`, `cut`, `derail`, `buffer`, `barricade`, `span` or `frontier` ends the night at once, to see its scene and the end sheet beside it (pair `dawn` with `t=1925` for its daylight).
 
 Without `play`, `sheet=<name>` opens a title sheet after the boot (`help`, `settings`, `about`, `scores`), and `shot=1` reveals the title without its print-in.
 

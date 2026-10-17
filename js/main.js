@@ -226,16 +226,17 @@
         case "noWater": SFX.play("warn"); say("The water's gone! The firebox is burning dry!", "red", 3000); break;
         case "overPressure": SFX.play("warn"); say("Pressure's too high! Blow her off, or close the door!", "red", 2800); break;
         case "whistle": SFX.play("whistle"); break;
-        case "pointsSet": SFX.play("points", 0.8); if (!e.map) say(`Points set ${POINTS[e.p]} at ${nm(e.n)}.`, "", 2400); break;
+        case "pointsSet": SFX.play("points", 0.8); if (!e.map) say(e.turn ? `Points set ${POINTS[e.p]} at ${nm(e.n)}, off the straight. Under ${C.POINTS.rough} over them!` : `Points set ${POINTS[e.p]} at ${nm(e.n)}.`, e.turn ? "amber" : "", e.turn ? 3200 : 2400); break;
         case "pointsNone": say("No points ahead to set.", "", 1800); break;
         case "pointsMuddled": say("Too many blasts. They'll leave the points as they are.", "amber", 2200); break;
         case "overPoints": SFX.play("points", 0.4); break;
         case "rough": SFX.play("clunk"); say("Too fast over the points! Mind the wheels!", "amber", 2400); break;
         case "buffers": SFX.play("clunk"); say("Buffers. End of the line: back her out.", "amber", 2600); break;
         /* Duc's eyes */
-        case "pointsAhead": say(`Points at ${nm(e.n)}, ${mi(e.d)}: set ${POINTS[e.p]}.`, "", 3000); break;
-        case "stationAhead": if (L.nodes[e.n].final) say("Port Clair! The coast! Bring her in!", "green", 3600); else say(e.held ? `${nm(e.n)} ahead. The wolves hold it.` : `${nm(e.n)} ahead. It's ours.`, e.held ? "amber" : "", 2800); break;
-        case "bridgeAhead": if (e.guarded) say(`Gunboats at the ${L.edges[e.e].bridge.name}.`, "amber", 2800); break;
+        case "pointsAhead": say(e.turn ? `Points at ${nm(e.n)}, ${mi(e.d)}: set ${POINTS[e.p]}, off the straight. Bring her under ${C.POINTS.rough}!` : `Points at ${nm(e.n)}, ${mi(e.d)}: set ${POINTS[e.p]}.`, e.turn ? "amber" : "", e.turn ? 3600 : 3000); break;
+        case "stationAhead": if (L.nodes[e.n].final) say("Port Clair! The coast! Bring her in!", "green", 3600); else say(e.held ? `${nm(e.n)}, ${mi(e.d)}. The wolves hold it: they'll have the line blocked. Stop her short!` : `${nm(e.n)} ahead. It's ours.`, e.held ? "amber" : "", e.held ? 3600 : 2800); break;
+        case "bridgeAhead": if (e.guarded) say(`Gunboats at the ${L.edges[e.e].bridge.name}, ${mi(e.d)}. Stop her short of the bridge!`, "amber", 3600); break;
+        case "emergency": SFX.play("screech"); say(e.n !== undefined ? `Emergency stop! They've blocked the line at ${nm(e.n)}!` : `Emergency stop! Gunboats on the river!`, "red", 3200); break;
         case "endAhead": SFX.play("warn"); say("Dead end ahead! Stop her!", "red", 3000); break;
         case "frontierAhead": SFX.play("alarm"); say("That's the Wolf frontier ahead! Stop and back her up!", "red", 3600); break;
         case "cutAhead": SFX.play("warn"); say(e.known ? "The cut in the line is ahead. Stop short of it!" : "The line's cut ahead! Brake! Brake!", "red", 3200); break;
@@ -463,7 +464,7 @@
       if (q.has("play")) {
         /* debug: ?play=<0-2>&seed=<n> straight into a night; &practice=station|air|bridge; &skip=1 past the yard fight;
            &t=<minutes on from the midnight before: 22:30 is 1350, dawn 1920>; &view=cab|front|rear|map; &v=<mph>; &pause=1;
-           &end=won|dawn|burst|boiler|motion|cut|derail|buffer|frontier to see how the night ends */
+           &end=won|dawn|burst|boiler|motion|cut|derail|buffer|barricade|span|frontier to see how the night ends */
         const S = E.newGame({ diff: +(q.get("play") || 1), seed: +(q.get("seed") || 1), practice: q.get("practice") || null });
         if (q.has("skip") && !S.practice) { E.captured(S, []); E.depart(S, "none"); S.cab.brake = 0; }
         if (q.has("t")) S.t = +q.get("t");

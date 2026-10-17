@@ -72,7 +72,7 @@
         const j = L.nextJunction(S);
         if (n > 3) ev.push({ t: "pointsMuddled" });
         else if (!j) ev.push({ t: "pointsNone" });
-        else { S.pts[j.n] = n - 1; ev.push({ t: "pointsSet", n: j.n, p: n - 1, d: j.d }); }
+        else { S.pts[j.n] = n - 1; ev.push({ t: "pointsSet", n: j.n, p: n - 1, d: j.d, turn: L.choose(j.n, j.from, n - 1) !== L.choose(j.n, j.from, 1) }); }
       }
     }
     /* the fireman (a Field aid): keeps the pressure near working, and blows off before the red line */

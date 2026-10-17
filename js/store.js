@@ -12,7 +12,7 @@
   PX.AID_LIST = [
     ["fireman", "A fireman aboard", "Someone else keeps the fire: shovels when the pressure drops, blows off before the red line. You drive."],
     ["lock", "Reverser lock", "The reverser will not move while she rolls, instead of the motion paying for it."],
-    ["lookout", "Lookout", "Duc spots a cut in the line, a dead end or the frontier in good time and brakes for it, and slows her for points set against the straight."],
+    ["lookout", "Lookout", "Duc spots a cut in the line, a dead end or the frontier in good time and brakes for it, slows her for points set against the straight, and makes an emergency stop short of a station the wolves hold or a bridge their gunboats watch."],
     ["route", "Route on the map", "The map lights the way the points will take you, to the coast or to wherever it ends."],
     ["planner", "Points from the map", "Click a junction on the map to set its points, as well as by whistle."],
     ["ahead", "Line ahead", "A panel with the next points, station and bridge, how far, and whose."],

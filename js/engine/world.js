@@ -91,6 +91,7 @@
     if (S.practice) { S.odo += Math.abs(S.tr.v) * C.HOURS_PER_STEP; S.odoF += S.tr.v * C.HOURS_PER_STEP; return ev; }
     move(S, aids, ev);
     if (S.phase === "run") lookout(S, aids, ev);
+    else S.look = null;
     return ev;
   };
 
@@ -150,19 +151,22 @@
     if (S.served >= 0 && n !== S.served && milesTo(S, S.served) > 1.2) S.served = -1;
     if (n >= 0 && !S.visited[n]) { S.visited[n] = true; ev.push({ t: "station", n, held: S.st[n].held }); }
     if (n >= 0 && L.nodes[n].final) { E.win(S, ev); return; }
-    /* what stops her: a station the wolves hold, a bridge their gunboats watch */
-    const ahead = L.ahead(S, C.SET_PIECE_AT + 0.2);
+    /* what stops her: a station the wolves hold, a bridge their gunboats watch. Run up to either faster
+     * than C.SET_PIECE_V and she cannot be pulled up: into the barricade, or onto the bridge under their
+     * guns. Only as she reaches the place, though: a hold that runs out with her already inside it stops
+     * her as it always did, since nobody could have braked for it. */
+    const ahead = L.ahead(S, C.SET_PIECE_AT + 0.2), fast = Math.abs(S.tr.v) > C.SET_PIECE_V;
     for (const a of ahead) {
-      if (a.k === "node" && L.nodes[a.n].kind === "st" && S.st[a.n].held && a.d <= 0.55) {
+      if (a.k === "node" && L.nodes[a.n].kind === "st" && S.st[a.n].held && a.d <= C.BARRICADE_AT) {
+        if (fast && a.d > C.BARRICADE_AT - 0.1) { E.end(S, "barricade", ev); S.end.n = a.n; return; }
         resolveTask(S, "station", a.n);
         ev.push({ t: "ambush", n: a.n, v: Math.abs(S.tr.v) });
-        if (Math.abs(S.tr.v) > 38) E.hurt(S, "brakes", 6, ev, "stop");
         E.startStation(S, a.n, false); return;
       }
       if (a.k === "bridge" && S.br[a.e].guarded && a.d > 0 && a.d <= C.SET_PIECE_AT) {
+        if (fast && a.d > C.SET_PIECE_AT - 0.1) { E.end(S, "span", ev); S.end.e = a.e; return; }
         resolveTask(S, "bridge", a.e);
         ev.push({ t: "gunboats", e: a.e, v: Math.abs(S.tr.v) });
-        if (Math.abs(S.tr.v) > 38) E.hurt(S, "brakes", 6, ev, "stop");
         E.startBridge(S, a.e); return;
       }
     }
@@ -180,17 +184,22 @@
 
   /* Duc's eyes: what he sees ahead, said once (1987: "Le Duc warns you when a switch is ahead") */
   function lookout(S, aids, ev) {
-    const v = Math.abs(S.tr.v);
     const ahead = L.ahead(S, 6);
+    let points = null;
     for (const a of ahead) {
       const key = a.k + ":" + (a.n !== undefined ? a.n : a.e);
-      if (a.k === "node" && L.isJunction(a.n) && a.d < 3.2 && a.d > 0.15 && !S.said[key]) {
-        S.said[key] = true; ev.push({ t: "pointsAhead", n: a.n, d: a.d, p: S.pts[a.n] });
+      /* points set off the straight he calls further out, with the speed for them: from full speed she needs near three miles */
+      const turn = a.k === "node" && L.isJunction(a.n) && L.choose(a.n, a.from, S.pts[a.n]) !== L.choose(a.n, a.from, 1);
+      if (a.k === "node" && L.isJunction(a.n) && a.d < (turn ? 4.5 : 3.2) && a.d > 0.15 && !S.said[key]) {
+        S.said[key] = true; ev.push({ t: "pointsAhead", n: a.n, d: a.d, p: S.pts[a.n], turn });
       }
-      if (a.k === "node" && L.nodes[a.n].kind === "st" && a.d < 4 && !S.said[key]) {
+      /* a station the wolves hold and a bridge their gunboats watch he calls further out too: she must be stood short of them */
+      const block = a.k === "node" ? L.nodes[a.n].kind === "st" && S.st[a.n].held : a.k === "bridge" && S.br[a.e].guarded;
+      if (a.k === "node" && L.nodes[a.n].kind === "st" && a.d < (block ? 6 : 4) && !S.said[key]) {
         S.said[key] = true; ev.push({ t: "stationAhead", n: a.n, d: a.d, held: S.st[a.n].held });
       }
-      if (a.k === "bridge" && a.d < 4 && !S.said[key]) { S.said[key] = true; ev.push({ t: "bridgeAhead", e: a.e, d: a.d, guarded: S.br[a.e].guarded }); }
+      if (a.k === "bridge" && a.d < (block ? 6 : 4) && !S.said[key]) { S.said[key] = true; ev.push({ t: "bridgeAhead", e: a.e, d: a.d, guarded: S.br[a.e].guarded }); }
+      if (aids.lookout && block) emergency(S, a, a.d - (a.k === "node" ? C.BARRICADE_AT : C.SET_PIECE_AT), key, ev);
       if (a.k === "end" && a.d < 2.5 && !S.said[key]) { S.said[key] = true; ev.push({ t: "endAhead", n: a.n, d: a.d }); }
       if (a.k === "wolf" && a.d < 5 && !S.said[key]) { S.said[key] = true; ev.push({ t: "frontierAhead", d: a.d }); }
       /* a cut: Duc sees it in the lamp a mile off; with the lookout aid, or when the report told of it, further, and she is braked for it */
@@ -203,11 +212,9 @@
       }
       if (aids.lookout && (a.k === "end" || a.k === "wolf") && a.d < 3) stopShort(S, a.d);
       /* points to be taken slower, if they are set against the straight */
-      if (aids.lookout && a.k === "node" && L.isJunction(a.n) && a.d < 2.2) {
-        const exitE = L.choose(a.n, a.from, S.pts[a.n]), straight = L.choose(a.n, a.from, 1);
-        if (exitE !== straight && v > C.POINTS.rough - 2) slowFor(S, a.d, C.POINTS.rough - 4, key);
-      }
+      if (aids.lookout && !points && turn && a.d < 2.2) points = a;
     }
+    easeFor(S, points);
     /* Field's lookout also slows her for a station she should stop at: no, that is the driver's; but for a stop at the end */
   }
   /* the lookout's hand on the brake: enough to stand short of d miles */
@@ -217,10 +224,37 @@
     const a = C.LOCO.brake * Math.max(0.15, 1 - S.dmg.brakes / 110), need = v * v / (2 * a) * (C.MIN_PER_STEP * C.HZ / 60) / 1;
     if (need > d - 0.35) { S.cab.thr = 0; S.cab.brake = Math.max(S.cab.brake, PX.clamp(need / Math.max(0.2, d - 0.35), 0.4, 1)); }
   }
-  function slowFor(S, d, vmax, key) {
-    const v = Math.abs(S.tr.v); if (v <= vmax) return;
-    const a = C.LOCO.brake * Math.max(0.15, 1 - S.dmg.brakes / 110), need = (v * v - vmax * vmax) / (2 * a) * (C.MIN_PER_STEP * C.HZ / 60);
-    if (need > d - 0.2) { S.cab.thr = Math.min(S.cab.thr, 0.15); S.cab.brake = Math.max(S.cab.brake, 0.7); }
+  /* an emergency stop short of a held station's barricade or a watched bridge, d miles off: at the last
+   * moment she can still be stood short of it, the throttle shut and the brake hard on, and Duc shouts */
+  function emergency(S, a, d, key, ev) {
+    const v = Math.abs(S.tr.v); if (v <= C.SET_PIECE_V || d <= 0) return;
+    const dec = C.LOCO.brake * Math.max(0.15, 1 - S.dmg.brakes / 110), need = v * v / (2 * dec) * (C.MIN_PER_STEP * C.HZ / 60);
+    if (need < d - 0.15) return;
+    S.cab.thr = 0; S.cab.brake = 1;
+    if (!S.said["stop:" + key]) { S.said["stop:" + key] = true; ev.push(a.k === "node" ? { t: "emergency", n: a.n, v } : { t: "emergency", e: a.e, v }); }
+  }
+  /* and for points set against the straight (a, or null when there are none in reach): the brake is a
+   * lever that stays where it is left, so the lookout takes it only while she is too fast for them, and
+   * gives the brake and then the throttle back as it found them, unless the driver has moved them since.
+   * S.look is what it took: { thr, brake } as they were, and what it set them to. */
+  function easeFor(S, a) {
+    const c = S.cab, v = Math.abs(S.tr.v), vmax = C.POINTS.rough - 4;
+    let h = S.look;
+    if (a && v > vmax) {
+      const dec = C.LOCO.brake * Math.max(0.15, 1 - S.dmg.brakes / 110), need = (v * v - vmax * vmax) / (2 * dec) * (C.MIN_PER_STEP * C.HZ / 60);
+      if (need > a.d - 0.2) {
+        if (!h) h = S.look = { thr: c.thr, brake: c.brake, setThr: -1, setBrake: -1 };
+        c.thr = Math.min(c.thr, 0.15); c.brake = Math.max(c.brake, 0.7);
+        h.setThr = c.thr; h.setBrake = c.brake;
+        return;
+      }
+    }
+    if (!h) return;
+    /* slow enough for them: off the brake */
+    if (h.setBrake >= 0 && c.brake === h.setBrake) c.brake = h.brake;
+    h.setBrake = -1;
+    /* over them: the throttle as it was */
+    if (!a) { if (c.thr === h.setThr) c.thr = h.thr; S.look = null; }
   }
 
   /* ---- a station of ours: coal, water, repairs if asked for, the report ---- */

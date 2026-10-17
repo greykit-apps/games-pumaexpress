@@ -58,6 +58,18 @@
     door: d => { tone(220, 160, 90, "square", 0.05, d); hiss(60, 0.18, 1800, d, 1.4, 0, "bandpass"); },
     lever: d => { tone(330, 260, 60, "square", 0.05, d); tone(180, 140, 80, "square", 0.04, d, 0.04); },
     clunk: d => { tone(120, 70, 140, "sine", 0.3, d); hiss(80, 0.2, 900, d, 1, 0, "bandpass"); },
+    /* an emergency stop: iron on iron, a high squeal that wavers and sags as she slows */
+    screech: d => {
+      const a = A.ctx, t = a.currentTime + 0.005, T = 3.2;
+      for (const [f, v] of [[2650, 0.026], [3180, 0.018], [2120, 0.016]]) {
+        const o = a.createOscillator(), g = a.createGain(), w = a.createOscillator(), wg = a.createGain();
+        o.type = "sawtooth"; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * 0.84, t + T);
+        w.frequency.value = 6 + f / 900; wg.gain.value = f * 0.014; w.connect(wg); wg.connect(o.frequency);
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.07); g.gain.setValueAtTime(v, t + T - 1); g.gain.exponentialRampToValueAtTime(0.0008, t + T);
+        o.connect(g); g.connect(d); o.start(t); w.start(t); o.stop(t + T + 0.02); w.stop(t + T + 0.02);
+      }
+      hiss(T * 1000, 0.1, 3400, d, 2.5, 0, "bandpass", 2400, 0.08);
+    },
     points: d => { tone(900, 700, 40, "square", 0.04, d); tone(240, 160, 120, "sine", 0.25, d, 0.04); },
     gun: d => { hiss(45, 0.3, 2600, d, 0.7, 0, "bandpass"); tone(150, 80, 35, "square", 0.06, d); },
     smg: d => { hiss(40, 0.26, 3000, d, 0.8, 0, "bandpass"); tone(220, 110, 30, "square", 0.04, d); },

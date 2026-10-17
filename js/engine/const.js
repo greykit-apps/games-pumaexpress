@@ -47,7 +47,9 @@
   /* the points: diverging over this is rough, over that it is off the rails (UNCERTAIN) */
   C.POINTS = { rough: 30, derail: 46, buffer: 7 };
   C.STATION_ZONE = 0.45;    /* miles either side of the station: the platform */
-  C.SET_PIECE_AT = 1.4;     /* miles out, a held station or a guarded bridge stops the train */
+  C.SET_PIECE_AT = 1.4;     /* miles out, a guarded bridge stops the train */
+  C.BARRICADE_AT = 0.55;    /* miles out, a held station's barricade across the line does */
+  C.SET_PIECE_V = 15;       /* mph: faster than this into either, and she cannot be pulled up (UNCERTAIN) */
   C.SERVICE_MIN = 15;       /* minutes to coal, water and read the report */
   C.REPAIR_MIN = 40;        /* minutes the Resistance's fitters take */
   C.TASK_SLACK = 50;        /* minutes beyond the run at 30 mph the Resistance can hold a place */

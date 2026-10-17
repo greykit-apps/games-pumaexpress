@@ -7,13 +7,10 @@
      rule, the wordmark with "Puma" in cyan, the description, a tagline, the
      icon top right) over the title's own picture at twice its pixels: the
      train running west through the night, side on, its smoke streaming back
-     under the moon. Serve the repo over http, open tools/og.html, and save
-     the canvas (window.ogPNG() is its data URL), or screenshot it headless
-     at 1200x630:
-       chrome --headless --hide-scrollbars --window-size=1200,630
-              --screenshot=og.png http://127.0.0.1:8766/tools/og.html
-     iconArt() composes the icon's drawing and prints it for
-     tools/make-icons.js. Not deployed. -->
+     under the moon. `node tools/shots.mjs og` draws it into og.png; or serve
+     the repo over http, open tools/og.html, and save the canvas
+     (window.ogPNG() is its data URL). iconArt() composes the icon's drawing
+     and prints it for tools/make-icons.js. Not deployed. -->
 <style>body{margin:0;background:#222;overflow:hidden}canvas{display:block}</style>
 </head>
 <body>
