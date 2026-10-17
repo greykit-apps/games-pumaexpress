@@ -184,9 +184,9 @@ img.glyph { display: block; }
    flow and colour */
 #title h1 .pe-w { display: inline; color: inherit; }
 #title .pe-intro > .gk-shade, #title .pe-intro .pe-w, #title .pe-intro .gk-menu, #title .pe-intro > footer { opacity: 0; }
-#title .pe-intro.pe-name > .gk-shade { opacity: 1; transition: opacity 2.2s ease-in-out; }
 #title .pe-intro.pe-name .pe-w { opacity: 1; transition: opacity 1.6s ease-in-out var(--w); }
-#title .pe-intro.pe-menu .gk-menu, #title .pe-intro.pe-menu > footer { opacity: 1; transition: opacity 1s ease-out; }
+/* the shade down the left waits for the menu, and comes up with it */
+#title .pe-intro.pe-menu > .gk-shade, #title .pe-intro.pe-menu .gk-menu, #title .pe-intro.pe-menu > footer { opacity: 1; transition: opacity 1s ease-out; }
 .pe-scene { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 /* ---- new game, the station report, the end ---- */
