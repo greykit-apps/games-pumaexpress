@@ -18,7 +18,7 @@ What the game is meant to be is in [PRODUCT.md](PRODUCT.md), and how it looks in
 | `css/gk-tokens.css` | the Tactical palette, byte for byte from games-meta `canon/` (STANDARD.md §4) |
 | `css/pumaexpress.css` | the page, the HUD (flat dark panels over the scene), and the screens with words on them (dim lamplit paper and brass) |
 | `fonts/` | Barlow Semi Condensed and Pixelify Sans (SIL Open Font License; the licences are beside them) |
-| `js/gk-title.js` | the greykit.games boot, byte for byte from games-meta `canon/` (§3); the title after it is the game's own, in `js/main.js` |
+| `js/gk-title.js` | the greykit.games boot and default title, `@gk-title` v0.4 taken whole from games-meta `canon/` (§3); `js/main.js` gives it the menu and the train behind it, and `css/pumaexpress.css` its green and brass |
 | `js/util.js`, `js/engine/*.js` | the game itself, with no DOM in it and no clock or `Math.random`: every number (`const.js`), the line (`route.js`), the engine and its fire (`loco.js`), the three fights (`fights.js`), the night step by step (`world.js`) |
 | `js/engine/bot.js` | a driver who never tires: runs the train behind the title, and drives every night in the tests |
 | `js/art/kit.js` | what every picture shares: the canvas size, the material ramps, the dither, the night light, the pixel faces |

@@ -14,7 +14,9 @@
   const rnd = (a, b) => a + Math.random() * (b - a);
 
   /* ---- the kinds ---- */
-  FX.smoke = (x, y, o = {}) => FX.add({ k: "smoke", x, y, vx: o.vx || rnd(-4, 4), vy: o.vy || rnd(-18, -10), r: o.r || rnd(2, 4), grow: o.grow || 9, life: o.life || rnd(1.6, 2.6), col: o.col || [190, 196, 210], a: o.a || 0.5, layer: o.layer || "back" });
+  /* drag slows its rise (per second); shade, the colour of its side away from the moon; under, of a fire below it,
+     lighting its underside while it is young */
+  FX.smoke = (x, y, o = {}) => FX.add({ k: "smoke", x, y, vx: o.vx || rnd(-4, 4), vy: o.vy || rnd(-18, -10), r: o.r || rnd(2, 4), grow: o.grow || 9, life: o.life || rnd(1.6, 2.6), col: o.col || [190, 196, 210], a: o.a || 0.5, layer: o.layer || "back", drag: o.drag || 0, under: o.under || null, shade: o.shade || null });
   FX.spark = (x, y, o = {}) => FX.add({ k: "spark", x, y, vx: o.vx !== undefined ? o.vx : rnd(-40, 40), vy: o.vy !== undefined ? o.vy : rnd(-60, -10), g: o.g || 90, life: o.life || rnd(0.3, 0.8), col: o.col || "#ffcf6a" });
   FX.burst = (x, y, n, o = {}) => { for (let i = 0; i < n; i++) FX.spark(x, y, Object.assign({ vx: rnd(-1, 1) * (o.sp || 60), vy: rnd(-1, 0.4) * (o.sp || 60) }, o)); };
   FX.flash = (x, y, r, o = {}) => FX.add({ k: "flash", x, y, r, life: o.life || 0.09, col: o.col || "255,230,160" });
@@ -31,7 +33,7 @@
     const L = list();
     for (const p of L) {
       p.t += dt;
-      if (p.k === "smoke") { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.99; p.r += p.grow * dt; }
+      if (p.k === "smoke") { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.99; p.r += p.grow * dt; if (p.drag) p.vy *= Math.exp(-p.drag * dt); }
       else if (p.k === "spark") { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; }
     }
     FX.lists[FX.scene] = L.filter(p => p.t < p.life);
@@ -47,6 +49,9 @@
         const a = p.a * (1 - f) * (f < 0.1 ? f / 0.1 : 1), d = K.dither(g, p.col.join(","), a);
         if (!d) continue;
         g.fillStyle = d; K.disc(g, p.x, p.y, p.r, p.r * 0.85);
+        /* the side away from the moon, a step darker, where the puff is thick enough to have one */
+        if (p.shade && p.r > 4) { const sh = K.dither(g, p.shade.join(","), a * 0.85); if (sh) { g.fillStyle = sh; K.disc(g, p.x + p.r * 0.25, p.y + p.r * 0.32, p.r * 0.6, p.r * 0.42); } }
+        if (p.under && f < 0.35) { const u = K.dither(g, p.under.join(","), a * (1 - f / 0.35)); if (u) { g.fillStyle = u; K.disc(g, p.x + p.r * 0.1, p.y + p.r * 0.4, p.r * 0.65, p.r * 0.4); } }
         /* its moonlit top: a lighter shade of the same, a step denser */
         if (p.r > 3) { const hi = K.dither(g, p.col.map(v => Math.min(255, Math.round(v + (255 - v) * 0.35))).join(","), a * 0.7); if (hi) { g.fillStyle = hi; K.disc(g, p.x - p.r * 0.3, p.y - p.r * 0.3, p.r * 0.45, p.r * 0.4); } }
       } else if (p.k === "spark") {

@@ -175,34 +175,19 @@ img.glyph { display: block; }
 .pe-pop .keys.legend { display: grid; grid-template-columns: max-content 1fr max-content 1fr; gap: 7px 12px; align-items: center; line-height: 1.2; }
 .pe-pop .keys.legend .k { display: flex; gap: 4px; justify-self: end; }
 
-/* ---- the title: the train behind, the name, the menu in a panel ---- */
-.pe-title { position: fixed; inset: 0; overflow: hidden; background: #070b1c; }
-.pe-scene { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
-.pe-shade { position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, rgba(6,10,16,.84) 0%, rgba(6,10,16,.55) 30%, rgba(6,10,16,.06) 55%, rgba(6,10,16,0) 70%); }
-.pe-title main { position: relative; height: 100%; width: min(680px, 100%); display: flex; flex-direction: column; justify-content: flex-start; padding: clamp(28px, 9vh, 96px) 0 64px clamp(32px, 7vw, 120px); }
-.pe-mark { margin: 0; font: 700 clamp(56px, 6.4vw, 92px)/.9 var(--ui); text-transform: uppercase; letter-spacing: .005em; color: var(--pe-text); text-shadow: 0 4px 28px rgba(0,0,0,.45); }
-.pe-mark > span { display: block; }
-.pe-mark .the { font-size: .48em; letter-spacing: .14em; color: var(--pe-muted); margin-bottom: .12em; }
-.pe-mark .puma { color: var(--pe-tawny); }
-.pe-sub > span { white-space: nowrap; }
-.pe-sub { margin: 16px 0 30px; max-width: 440px; font-size: 14px; font-weight: 600; line-height: 1.6; letter-spacing: .2em; text-transform: uppercase; text-wrap: balance; color: var(--pe-muted); text-shadow: 0 1px 10px rgba(6,10,16,.9); }
-.pe-menu { display: flex; flex-direction: column; width: min(460px, 100%); padding: 8px 0; background: var(--pe-panel); border: 1px solid var(--pe-line); border-radius: 8px; box-shadow: 0 18px 50px rgba(0,0,0,.45); }
-.pe-menu button { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; height: 50px; padding: 0 22px; border: 0; border-radius: 0; background: transparent; font-size: 20px; font-weight: 500; color: rgba(236,231,220,.86); }
-.pe-menu kbd { min-width: 26px; text-align: center; color: var(--pe-muted); }
-.pe-menu .lbl { white-space: nowrap; }
-.pe-menu .meta { margin: 0 0 0 auto; font-size: 15px; font-weight: 500; color: var(--pe-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pe-menu .dflt { color: var(--pe-text); font-weight: 600; }
-.pe-menu button:focus { color: #fffaf0; font-weight: 600; background: linear-gradient(90deg, rgba(242,193,78,.22), rgba(242,193,78,.05) 75%, rgba(242,193,78,0)); box-shadow: none; }
-.pe-menu button:focus::before { content: ""; position: absolute; left: 7px; top: 50%; margin-top: -6px; border-left: 7px solid var(--pe-yellow); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
-.pe-menu button:focus kbd { color: var(--pe-text); border-color: var(--pe-yellow); }
-.pe-menu button:focus .meta { color: var(--pe-muted); }
-.pe-menu .util { display: flex; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--pe-hair); }
-.pe-menu .util button { flex: 1; height: 44px; font-size: 16px; gap: 10px; padding: 0 18px; }
-.pe-foot { position: absolute; left: clamp(32px, 7vw, 120px); bottom: 24px; font-size: 14px; }
-.pe-print .pr { animation: pe-pr .32s cubic-bezier(.2,.8,.2,1) calc(var(--i) * 45ms) both; }
-@keyframes pe-pr { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .pe-print .pr { animation: none; } }
+/* ---- the title: the canon default (@gk-title v0.4) over the train, in the engine's green lined out in brass ---- */
+#title { --gk-title-ink: var(--pe-text); --gk-title-hi: #f0c062; --gk-title-focus: var(--pe-yellow); --gk-title-dim: var(--pe-muted);
+  --gk-title-panel: rgba(28,43,35,.82); --gk-title-line: rgba(232,189,92,.4); --gk-title-font: var(--ui); }
+#title .gk-title > .scene { background: #070b1c; }
+/* the opening (main.js): the train alone, then the name fading in a word at a time (main.js's WORDS), then the
+   menu; a key or a click skips it. The words are spans inside the canon's lines, so they take back the line's
+   flow and colour */
+#title h1 .pe-w { display: inline; color: inherit; }
+#title .pe-intro > .gk-shade, #title .pe-intro .pe-w, #title .pe-intro .gk-menu, #title .pe-intro > footer { opacity: 0; }
+#title .pe-intro.pe-name .pe-w { opacity: 1; transition: opacity 1.6s ease-in-out var(--w); }
+/* the shade down the left waits for the menu, and comes up with it */
+#title .pe-intro.pe-menu > .gk-shade, #title .pe-intro.pe-menu .gk-menu, #title .pe-intro.pe-menu > footer { opacity: 1; transition: opacity 1s ease-out; }
+.pe-scene { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 /* ---- new game, the station report, the end ---- */
 .diffs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
@@ -440,9 +425,9 @@ img.fig { display: inline-block; vertical-align: middle; }
 .hud-w1100 .hs-left .h-dawn, .hud-w1100 #hud #h-ahead .ha-row .lbl { display: none; }
 @media (max-width: 1000px) { #hud #h-ahead { padding: 6px 14px; } #hud #h-ahead .ha-rows { column-gap: 16px; } #hud #h-ahead .ha-row + .ha-row { padding-left: 16px; } #hud #h-ahead .ha-row .ha-n { font-size: 17px; } #hud #h-ahead .ha-row .ha-v { font-size: 15px; } }
 
-/* ==== paper and brass: the name on a cast nameplate, the title menu as the Resistance's
-   orders to seize the train, the pause as a telegram, and every sheet and window as paper
-   pinned up where the lamp only just reaches. The HUD stays dark glass over the night. ==== */
+/* ==== paper: the Resistance's orders before a night, the pause as a telegram, and every sheet
+   and window as paper pinned up where the lamp only just reaches. The HUD stays dark glass
+   over the night. ==== */
 :root {
   --pe-paper-ink: #22180f;                /* 8.3:1 where the lamp falls, 5.6:1 at the edge */
   --pe-paper-ink2: #36281a;               /* 7:1 lit, 4.7:1 at the edge */
@@ -450,56 +435,18 @@ img.fig { display: inline-block; vertical-align: middle; }
   --pe-grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .1  0 0 0 .2 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
-/* the nameplate: oxblood ground, a polished brass rim with a beaded edge, raised brass letters */
-/* the orders are taller than the panel was: start the column higher */
-.pe-title main { padding-top: clamp(20px, 5vh, 72px); }
-.pe-mark { align-self: flex-start; font-size: clamp(42px, 4.4vw, 64px); line-height: 1; letter-spacing: 0; text-shadow: none; }
-.pe-mark .plate { position: relative; display: flex; flex-direction: column; align-items: center; padding: .34em .62em .3em;
-  background: linear-gradient(180deg, #5a1712 0 46%, #4b120e 46% 100%);
-  border-radius: 50% 50% .12em .12em / .62em .62em .12em .12em;
-  box-shadow: 0 0 0 .05em #f3cf7a, 0 0 0 .085em #c08b3c, 0 0 0 .115em #6b4614, 0 0 0 .135em #160d06, 0 .3em .6em rgba(0,0,0,.6); }
-.pe-mark .plate::before { content: ""; position: absolute; inset: .1em; border: .03em dotted rgba(243,207,122,.6); border-radius: inherit; pointer-events: none; }
-.pe-mark .plate::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  background: radial-gradient(circle at .3em 62%, #f3cf7a 0 .04em, #8a5c1e .045em .065em, transparent .07em),
-              radial-gradient(circle at calc(100% - .3em) 62%, #f3cf7a 0 .04em, #8a5c1e .045em .065em, transparent .07em); }
-.pe-mark .the, .pe-mark .nm { display: block; color: transparent; -webkit-background-clip: text; background-clip: text;
-  background-image: linear-gradient(180deg, #fff1c4 0 28%, #f0c062 28% 64%, #b98235 64% 100%); filter: drop-shadow(0 .035em 0 #1a0604); }
-.pe-mark .the { font-size: .34em; letter-spacing: .5em; margin: 0 -.5em .06em 0; }
-.pe-mark .nm { letter-spacing: .06em; margin-right: -.06em; white-space: nowrap; }
-
-/* the orders: typed, numbered, stamped Most secret and signed with a paw, pinned up where the lamp only just reaches */
-.pe-menu { position: relative; margin-top: 20px; padding: 0 0 12px; border: 0; border-radius: 2px; color: var(--pe-paper-ink);
-  background: var(--pe-grain), radial-gradient(130% 95% at 20% 0%, #bfb293 0%, #ad9f7e 50%, #a39573 100%);
-  box-shadow: inset 0 0 0 1px rgba(40,25,10,.45), inset 0 0 40px rgba(40,25,8,.15), 0 18px 50px rgba(0,0,0,.6); }
-.pe-menu::before, .pe-menu::after { content: ""; position: absolute; top: 9px; width: 9px; height: 9px; border-radius: 50%; z-index: 1;
-  background: radial-gradient(circle at 35% 35%, #fff1c4 0 20%, #c08b3c 45%, #5d3d12 100%); box-shadow: 0 2px 2px rgba(0,0,0,.4); }
-.pe-menu::before { left: 10px; } .pe-menu::after { right: 10px; }
-.tt-head { position: relative; padding: 16px 26px 10px; border-bottom: 3px double rgba(42,31,20,.7); }
-.tt-head p { margin: 0; }
-.tt-co { font: 700 12px/1.2 var(--ui); letter-spacing: .26em; text-transform: uppercase; color: var(--pe-paper-ink2); }
-.tt-svc { margin-top: 5px !important; font: 700 21px/1.1 var(--ui); letter-spacing: .06em; text-transform: uppercase; }
-.tt-secret { position: absolute; right: 22px; top: 18px; transform: rotate(-6deg); padding: 5px 9px 4px; border: 2px solid var(--pe-paper-red); border-radius: 3px;
-  font: 400 14px/1 var(--px); letter-spacing: .14em; text-transform: uppercase; color: var(--pe-paper-red); opacity: .85; mix-blend-mode: multiply; }
-.od { padding: 10px 26px 0; }
-.od p { margin: 0 0 5px; font: 400 14px/1.32 var(--px); color: var(--pe-paper-ink); }
-.od b, .od-h b { font: 700 12px/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; }
-.od-h { margin: 0; padding: 4px 26px 2px; }
-.od .od-h { margin: 0; padding: 4px 0 2px; }
-.od-h.adm { margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(42,31,20,.3); }
-.tt-paw { flex: none; width: 40px; height: 33px; margin: -14px -2px -6px 0; transform: rotate(-14deg); color: var(--pe-paper-red); opacity: .78; mix-blend-mode: multiply; }
-.pe-menu button { height: 40px; padding: 0 22px; gap: 12px; font-size: 19px; color: var(--pe-paper-ink); }
-.pe-menu kbd, .pe-tg kbd { color: var(--pe-paper-ink); border-color: rgba(34,24,15,.5); background: rgba(235,226,200,.35); }
-.pe-menu .dots { flex: 1; min-width: 14px; align-self: center; margin-top: 10px; border-bottom: 2px dotted rgba(34,24,15,.42); }
-.pe-menu .meta { margin: 0; flex: none; max-width: 150px; font-size: 15px; color: var(--pe-paper-ink2); }
-.pe-menu .tm { flex: none; min-width: 42px; text-align: right; font: 400 15px/1 var(--px); font-variant-numeric: tabular-nums; }
-.pe-menu .dflt { color: var(--pe-paper-ink); }
-.pe-menu button:focus { color: #160f08; background: linear-gradient(90deg, rgba(110,24,14,.3), rgba(110,24,14,.09) 75%, rgba(110,24,14,0)); }
-.pe-menu button:focus::before { border-left-color: var(--pe-paper-red); }
-.pe-menu button:focus kbd { color: #160f08; border-color: var(--pe-paper-red); background: rgba(110,24,14,.14); }
-.pe-menu button:focus .meta { color: var(--pe-paper-ink); }
-.pe-menu .util { margin-top: 0; padding-top: 0; border-top: 0; }
-.pe-menu .util button { height: 40px; font-size: 16px; }
-.tt-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 22px 0 26px; font: italic 500 13px/1.3 var(--ui); color: var(--pe-paper-ink2); }
+/* the orders: typed, numbered, stamped Most secret and signed with a paw */
+.pe-orders .sh-box { width: min(540px, 100%); }
+.pe-orders .sh-head { position: relative; padding-right: 150px; border-bottom: 3px double rgba(42,31,20,.7); }
+.pe-orders .sh-head h2 { font-size: 22px; }
+.pe-orders .sh-head h2::before { content: "Resistance · operation orders" / ""; display: block; margin-bottom: 5px; font: 700 12px/1.2 var(--ui); letter-spacing: .26em; color: var(--pe-paper-ink2); }
+.pe-orders .sh-head::after { content: "Most secret" / ""; position: absolute; right: 22px; top: 50%; margin-top: -14px; transform: rotate(-6deg); padding: 5px 9px 4px;
+  border: 2px solid var(--pe-paper-red); border-radius: 3px; font: 400 14px/1 var(--px); letter-spacing: .14em; text-transform: uppercase; color: var(--pe-paper-red); opacity: .85; mix-blend-mode: multiply; }
+.pe-orders .sh-body { padding: 16px 26px 14px; }
+.od p { margin: 0 0 10px; font: 400 16px/1.4 var(--px); color: var(--pe-paper-ink); }
+.od b { font: 700 13px/1 var(--ui); letter-spacing: .14em; text-transform: uppercase; }
+.od-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 0; font: italic 500 14px/1.3 var(--ui); color: var(--pe-paper-ink2); }
+.od-paw { flex: none; width: 44px; height: 36px; margin: -10px -4px -8px 0; transform: rotate(-14deg); color: var(--pe-paper-red); opacity: .78; mix-blend-mode: multiply; }
 
 /* the telegram: buff form, a printed head, the night on pasted tape, the replies below */
 .pe-sheet.pe-tg .pe-win { border: 0; border-radius: 2px; color: var(--pe-paper-ink);
@@ -578,5 +525,3 @@ img.fig { display: inline-block; vertical-align: middle; }
   .pe-tg .col button { height: 33px; font-size: 17px; }
   .pe-tg .keys.legend { padding: 7px 26px 8px; gap: 4px 10px; grid-template-columns: repeat(3, max-content 1fr); }
 }
-/* a short window: the orders reach the foot, so the credit moves to the right, clear of them and of the corner buttons */
-@media (max-height: 719px) { .pe-foot { left: auto; right: 104px; bottom: 21px; text-shadow: 0 1px 6px rgba(6,10,16,.9); } }

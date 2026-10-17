@@ -1,7 +1,8 @@
 /* The Puma Express -- the screens with words on them: flat dark panels over
- * the scene (css/pumaexpress.css). How hard, before a night; the practice
- * fights; the pause; the station report and its telegraph; the end of the
- * night and the high scores; and Settings, Help and About from the title. */
+ * the scene (css/pumaexpress.css). How hard, and the Resistance's orders,
+ * before a night; the practice fights; the pause; the station report and its
+ * telegraph; the end of the night and the high scores; and Settings, Help
+ * and About from the title. */
 "use strict";
 (() => {
   const esc = PX.esc, C = PX.C, L = PX.Line, E = PX.Engine, K = PX.K;
@@ -116,8 +117,24 @@
       onKey: ev => { const n = +ev.key; if (n >= 1 && n <= 3) { ev.preventDefault(); go(n - 1); return true; } return false; },
       onClick: b => { if (b.dataset.d !== undefined) go(+b.dataset.d); },
     });
-    function go(d) { PX.store.set(PX.KEY_DIFF, d); UI.close(true); PX.game.start(d); }
+    function go(d) { PX.store.set(PX.KEY_DIFF, d); UI.orders(d); }
   };
+  /* ---- the orders: the Resistance's, typed and stamped, read before the yard at Velmont ---- */
+  /* the Resistance's rubber stamp: a puma's paw, a pixel at a time */
+  const PAW = (() => {
+    const g = ["....XXX..XXX....", "....XXX..XXX....", "XX..XXX..XXX..XX", "XXX..........XXX", "XXX..........XXX", "......XXXX......", "....XXXXXXXX....",
+      "...XXXXXXXXXX...", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "...XXXX..XXXX...", "....XX....XX...."];
+    let d = "";
+    g.forEach((r, y) => r.replace(/X+/g, (m, x) => { d += `M${x} ${y}h${m.length}v1h-${m.length}z`; return m; }));
+    return `<svg class="od-paw" viewBox="0 0 16 13" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="${d}"/></svg>`;
+  })();
+  UI.orders = d => UI.open("The train at Velmont", { cls: "pe-orders", back: () => UI.newGame(),
+    html: () => `<div class="od"><p><b>1. Situation.</b> The wolves have loaded forty-eight paintings onto a train in the yards at Velmont, bound for the Empire.</p>
+        <p><b>2. Object.</b> Seize the train. Get it to Port Clair before dawn. Send Resistance orders from stations. Godspeed.</p></div>
+      <p class="od-foot"><span>For the Resistance. Burn after reading.</span>${PAW}</p>`,
+    foot: () => `<div class="row end"><span class="note">${esc(C.DIFF[d].name)} · the train is taken at ${PX.hhmm(C.DIFF[d].start)}</span><button data-act="go" class="primary" autofocus>To the yards</button></div>`,
+    onClick: b => { if (b.dataset.act === "go") { UI.close(true); PX.game.start(d); } },
+  });
   /* ---- practice: one fight on its own ---- */
   UI.practice = () => {
     const P = [["station", "A station", "Cover Duc up the platform to the points lever and back while the wolves come to the windows."], ["air", "An air raid", "Fighters down the line from ahead and behind: the front gun and the rear."], ["bridge", "A bridge", "Gunboats on the river below: lay the cannon by bearing and range, and correct from the splash."]];
