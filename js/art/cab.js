@@ -6,7 +6,7 @@
  * streaming back. Below, the backhead, the boiler's round black end, and the
  * controls 1987 gave the driver, laid out as a driver reaches for them: the
  * pressure and speed gauges either side of the boiler thermometer under the
- * steam manifold, the water glass, the firebox door with its butterfly
+ * steam manifold, the cab clock beside them, the water glass, the firebox door with its butterfly
  * doors, the regulator (the throttle) on its quadrant, the reverser on the
  * floor, the vacuum brake and its gauge on the cab side, the points
  * repeater, the whistle chain and the safety valve's pull hanging from the
@@ -43,6 +43,9 @@
     Lo.board = { x: X(332), y: Y(170), w: Math.round(160 * u), h: Y(242) - Y(170) };
     Lo.gauges = { psi: { x: X(366), y: Y(206), r: R(24) }, mph: { x: X(458), y: Y(206), r: R(24) }, temp: { x: X(412), y: Y(224), r: R(14) }, vac: { x: X(586), y: Y(204), r: R(15) } };
     Lo.pts = { x: X(412) - Math.round(18 * u), y: Y(180), w: Math.round(36 * u), h: Math.round(22 * sy) };
+    /* the cab clock, screwed to the plate right of the board: below the whistle's pull, above the brake and the
+       reverser, so nothing the paw takes hold of lies over it */
+    Lo.clock = { x: X(531), y: Y(199), r: R(19) };
     /* the driver's spectacle window, beside the boiler: the plate is solid over the firebox, and the fireman's window
        is on the far side of the boiler, out of the driver's sight */
     /* the line's map on a card, clipped to the plate above the firebox */
@@ -60,11 +63,13 @@
     };
     /* the lamps, kept small so the crew keeps its night eyes: the hooded lamp along the top of the gauge board, and
        the one wide pool it spills below the board over the regulator, the reverser and the brake (a touch more on
-       the regulator, the driver's hand is always on it); the small lamp over the vacuum gauge; the little lamp behind
+       the regulator, the driver's hand is always on it); the small lamp over the vacuum gauge; the clock's, over it;
+     the little lamp behind
        the water glass; and the moon, faint and cold, on the plate round the spectacle */
     Lo.lamps = [{ x: X(412), y: Y(176), rx: 118 * u, ry: 84 * sy, k: 1.05, col: [1.0, 0.8, 0.52] }, { x: X(486), y: Y(272), rx: 240 * u, ry: 82 * sy, k: 0.6, col: [1.0, 0.78, 0.5] },
       { x: X(384), y: Y(286), rx: 70 * u, ry: 50 * sy, k: 0.2, col: [1.0, 0.78, 0.5] }, { x: X(586), y: Y(232), rx: 52 * u, ry: 56 * sy, k: 0.3, col: [1.0, 0.78, 0.5] },
-      { x: X(70), y: Y(232), rx: 34 * u, ry: 70 * sy, k: 0.85, col: [1.0, 0.8, 0.52] }, { x: X(427), y: Y(84), rx: 290 * u, ry: 150 * sy, k: 0.2, col: [0.55, 0.66, 0.95] }];
+      { x: X(70), y: Y(232), rx: 34 * u, ry: 70 * sy, k: 0.85, col: [1.0, 0.8, 0.52] }, { x: X(427), y: Y(84), rx: 290 * u, ry: 150 * sy, k: 0.2, col: [0.55, 0.66, 0.95] },
+      { x: X(531), y: Y(190), rx: 34 * u, ry: 36 * sy, k: 1.1, col: [1.0, 0.8, 0.52] }];
     /* the fire: with the door shut it leaks round the doors and through the draught slits onto the floor; open, it
        floods the cab from below */
     Lo.leak = { x: X(128), y: Y(370), rx: 160 * u, ry: 62 * sy, k: 1.0, col: [1.0, 0.5, 0.2] };
@@ -394,6 +399,11 @@
     { const G = Lo.gauges.vac, hw = G.r * 2 + 6, hx0 = G.x - hw / 2, hy = G.y - G.r - 9;
       K.rect(g, hx0 - 1, hy - 1, hw + 2, 6, INK); K.rect(g, hx0, hy, hw, 3, M.iron[2]); K.rect(g, hx0, hy, hw, 1, M.iron[1]);
       K.rect(g, hx0 + 2, hy + 3, hw - 4, 1, "#ffe6a8"); }
+    /* the cab clock: a brass drum on four lugs, its lamp hooded over it like the vacuum gauge's */
+    clockFace(g, Lo.clock);
+    { const G = Lo.clock, hw = G.r * 2 - 4, hx0 = G.x - hw / 2, hy = G.y - G.r - 12;
+      K.rect(g, hx0 - 1, hy - 1, hw + 2, 6, INK); K.rect(g, hx0, hy, hw, 3, M.iron[2]); K.rect(g, hx0, hy, hw, 1, M.iron[1]);
+      K.rect(g, hx0 + 2, hy + 3, hw - 4, 1, "#ffe6a8"); }
     /* the window: cut out, so the country shows through; the backhead's top and the lamp stay in front of it */
     cutWindow(c, Lo);
     c.plates = plates.slice();
@@ -460,6 +470,30 @@
       K.line(g, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, red && f * max >= red ? "#a52a18" : "#2a241c");
       if (big && step && r >= 20) { const v = String(Math.round(f * max / (max >= 300 ? 100 : 1))); K.text3(g, v, Math.round(x + Math.cos(a) * (fr - 9) - K.text3w(v) / 2), Math.round(y + Math.sin(a) * (fr - 9) - 2), "#3a3226"); }
     }
+  }
+  /* the clock's case and face: a brass drum on a flange screwed to the plate, a cream face with the hours ticked round it,
+     and the red line from first light to dawn, where the gauges keep theirs, so the hour hand coming into it says
+     the night is running out */
+  const clockAng = h => (h / 12 * 360 - 90) * Math.PI / 180;
+  function clockFace(g, G) {
+    const { x, y, r } = G, rim = Math.max(3, Math.round(r * 0.2)), fr = r - rim;
+    K.disc(g, x, y, r + 4, r + 4, INK);
+    boss(g, x, y, r + 3, M.brass, 0, 0.25);
+    for (const q of [45, 135, 225, 315]) { const a = q * Math.PI / 180; K.rivet(g, Math.round(x + Math.cos(a) * (r + 2) - 1), Math.round(y + Math.sin(a) * (r + 2) - 1), M.brass[0], M.brass[4]); }
+    K.ring(g, x, y, r + 1, INK, 1);
+    bezel(g, x, y, r, rim);
+    for (let j = -fr; j <= fr; j++) for (let i = -fr; i <= fr; i++) {
+      const d = Math.hypot(i, j); if (d > fr) continue;
+      g.fillStyle = K.mix("#f4ecd4", "#cfc3a2", Math.pow(d / fr, 3) * 0.8 + (j / fr) * 0.08); g.fillRect(x + i, y + j, 1, 1);
+    }
+    const h0 = (C.FIRST_LIGHT / 60) % 12, h1 = (C.DAWN / 60) % 12;
+    for (let a = clockAng(h0); a <= clockAng(h1) + 0.001; a += 0.02) for (let rr = fr - 2; rr <= fr - 1; rr++) K.px(g, x + Math.cos(a) * rr, y + Math.sin(a) * rr, "#c0311c");
+    for (let h = 1; h < 12; h++) {
+      const a = clockAng(h), big = h % 3 === 0, r0 = fr - (big ? 5 : 3), r1 = fr - 1;
+      K.line(g, x + Math.cos(a) * r0, y + Math.sin(a) * r0, x + Math.cos(a) * r1, y + Math.sin(a) * r1, h >= h0 && h <= h1 ? "#a52a18" : "#2a241c");
+    }
+    /* twelve is marked twice, so the face reads the right way up at a glance */
+    K.line(g, x - 1, y - fr + 1, x - 1, y - fr + 5, "#2a241c"); K.line(g, x + 1, y - fr + 1, x + 1, y - fr + 5, "#2a241c");
   }
 
   /* ---- the boiler through the window: ray-traced once for this size, from the driver's eye ----
@@ -697,6 +731,16 @@
     needle(g, G.mph, Math.abs(S.tr.v), 80);
     needle(g, G.temp, c.T, 500);
     needle(g, G.vac, c.brake, 1);
+    /* the clock's hands: the night's time, the minute hand sweeping, the hour hand creeping toward the red */
+    { const G = Lo.clock, fr = G.r - Math.max(3, Math.round(G.r * 0.2)), t = S.t / 60;
+      const ah = clockAng(t % 12), am = clockAng((t % 1) * 12);
+      for (const [a, len, w] of [[ah, fr * 0.55, 2], [am, fr - 2, 1]]) {
+        const tx = G.x + Math.cos(a) * len, ty = G.y + Math.sin(a) * len, bx = G.x - Math.cos(a) * 3, by = G.y - Math.sin(a) * 3;
+        K.line(g, bx + 1, by + 1, tx + 1, ty + 1, "rgba(0,0,0,.25)");
+        K.line(g, bx, by, tx, ty, "#151110", w);
+      }
+      boss(g, G.x, G.y, 2, M.brass);
+      for (let a2 = -2.5; a2 < -1.6; a2 += 0.05) K.px(g, G.x + Math.cos(a2) * (fr - 2), G.y + Math.sin(a2) * (fr - 2), "rgba(255,255,255,.55)"); }
     /* the points repeater: a lit arrow, three lamps for the blasts counted */
     const pb = Lo.pts, j = L.nextJunction(S);
     if (j && j.d < 25) arrow(g, pb.x + pb.w / 2, pb.y + pb.h / 2, S.pts[j.n], "#ffc35a");
