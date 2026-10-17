@@ -177,8 +177,12 @@
   L.mdir = S => { const t = S.tr; return t.v < 0 ? -t.face : t.face; };
   /* the node she is heading for, and how far */
   L.toward = S => { const t = S.tr, E = L.edges[t.e], m = L.mdir(S); return m > 0 ? [E.b, E.len - t.d] : [E.a, t.d]; };
+  /* the way she will go: while she rolls, the way she rolls; standing, the way the reverser will take her */
+  L.heading = S => { const t = S.tr; return t.v ? L.mdir(S) : S.cab && S.cab.rev < 0 ? -t.face : t.face; };
+  /* a point on the map, d miles along edge e from its a end */
+  L.at = (e, d) => { const E = L.edges[e], A = L.nodes[E.a], B = L.nodes[E.b], f = E.len ? d / E.len : 0; return [A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f]; };
   /* where she is on the map */
-  L.xy = S => { const t = S.tr, E = L.edges[t.e], A = L.nodes[E.a], B = L.nodes[E.b], f = E.len ? t.d / E.len : 0; return [A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f]; };
+  L.xy = S => L.at(S.tr.e, S.tr.d);
   /* the station she is standing in, if any */
   L.atStation = S => {
     const t = S.tr, E = L.edges[t.e];
@@ -219,4 +223,24 @@
   L.nextStation = S => { const a = L.ahead(S, 400).find(x => x.k === "node" && L.nodes[x.n].kind === "st" && x.d > C().STATION_ZONE); return a ? a.n : -1; };
   L.nextBridge = S => { const a = L.ahead(S, 400).find(x => x.k === "bridge" && x.d > 0.3); return a ? a.e : -1; };
   L.nextJunction = S => { const a = L.ahead(S, 400).find(x => x.k === "node" && L.isJunction(x.n) && x.d > 0.05); return a || null; };
+
+  /* the way the points lead, for the map: where she is, each place she would pass, and how it ends.
+     { pts: [[x, y]...], k, d, n|e } where k is "home" (Port Clair), "end" (the buffers), "wolf" (the
+     frontier), "cut" (a cut the Resistance has reported; one nobody knows of is not told), "loop" (n
+     sends her back onto track already passed, and round for ever), or "far" (on past max miles, which the line is too small for) */
+  L.path = (S, max = 2000) => {
+    const pts = [L.xy(S)], via = [], used = new Set();
+    let last = null;
+    for (const a of L.ahead(S, max, L.heading(S))) {
+      if (a.k === "cut" && S.cut[a.e].known) { pts.push(L.at(a.e, S.cut[a.e].at)); return { pts, via, k: "cut", d: a.d, e: a.e }; }
+      if (a.k === "end" || a.k === "wolf") return { pts, via, k: a.k, d: a.d, n: a.n };
+      if (a.k !== "node") continue;
+      if (last && used.has(a.from)) return { pts, via, k: "loop", d: last.d, n: last.n };
+      used.add(a.from); last = a;
+      const N = L.nodes[a.n];
+      pts.push([N.x, N.y]); via.push(a);
+      if (N.final) return { pts, via, k: "home", d: a.d, n: a.n };
+    }
+    return { pts, via, k: "far", d: max };
+  };
 })();
