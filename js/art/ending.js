@@ -11,7 +11,8 @@
  * pumas lifting the pictures down under the bunting. Lost, she stands
  * wherever it ended: in daylight with the fighters over her; in a cloud of
  * her own steam; off the rails at a cut or the points; against the buffers;
- * at the wolves' barrier on the frontier. */
+ * at the wolves' barrier on the frontier, or off the rails at their barricade
+ * across a station's line; at the gap where the gunboats brought a span down. */
 "use strict";
 (() => {
   const K = PX.K, M = K.M, L = PX.Line, FX = PX.FX;
@@ -152,14 +153,14 @@
     /* where she stands: won, the open van a quarter across; lost, her front at the middle, clear of the sheet beside it */
     const ex = won ? Math.round(W * 0.25) + Math.round(7.65 * S_) + Math.round(6.75 * S_) - Math.round(3.7 * S_) : Math.round(W * 0.48) - Math.round(11.15 * S_);
     const front = ex + Math.round(11.15 * S_);
-    const off = why === "derail" || why === "cut";
-    if (!won) rail(g, W, ry, l, why === "cut" ? [front - 8, front + 40] : null);
+    const off = why === "derail" || why === "cut" || why === "barricade" || why === "span", gap = why === "cut" || why === "span", wolves = why === "frontier" || why === "barricade";
+    if (!won) rail(g, W, ry, l, gap ? [front - 8, front + (why === "span" ? 90 : 40)] : null);
     if (why === "buffer") stop(g, front, ry, l);
-    if (why === "frontier") barrier(g, front + 26, ry, l);
+    if (wolves) barrier(g, front + 26, ry, l);
     FX.draw(g, "back");
-    train(g, ex, ry, light, off ? (why === "cut" ? 0.13 : 0.06) : why === "buffer" ? -0.03 : 0, off ? Math.round(0.5 * S_) : 0, won ? 0 : -1);
+    train(g, ex, ry, light, off ? (gap ? 0.13 : 0.06) : why === "buffer" ? -0.03 : 0, off ? Math.round(0.5 * S_) : 0, won ? 0 : -1);
     if (won) platform(g, S, W, H, ex, ry, l, now);
-    if (why === "frontier") for (let k = 0; k < 3; k++) { const w = PX.People.wolfFig(k === 1 ? "aim" : "stand", k); g.drawImage(K.flip(w), front + 8 + k * 16, ry + 4 - w.height + (k % 2) * 3); }
+    if (wolves) for (let k = 0; k < 3; k++) { const w = PX.People.wolfFig(k === 1 ? "aim" : "stand", k); g.drawImage(K.flip(w), front + 8 + k * 16, ry + 4 - w.height + (k % 2) * 3); }
     /* steam and smoke as she stands */
     const dome = { x: ex + Math.round(6 * S_), y: ry - Math.round(3.9 * S_) }, chim = { x: ex + Math.round(9.35 * S_), y: ry - Math.round(4.3 * S_) };
     /* by the second, not the frame: so many puffs a second whatever the frame rate */

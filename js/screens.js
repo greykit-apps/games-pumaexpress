@@ -234,6 +234,7 @@
     won: "The train is in at Port Clair, and the art with it.",
     burst: "The boiler burst.", boiler: "The boiler gave out.", motion: "The running gear gave out, and she stands where she is.",
     cut: "She ran onto a cut in the line and went off the rails.", derail: "She took the points too fast and left the rails.", buffer: "She hit the buffers at the end of a dead line.",
+    barricade: "She ran into the barricade the wolves had across the line, and went off the rails.", span: "She ran onto a bridge under the gunboats' guns, and they brought the span down.",
     frontier: "She ran into the Wolf frontier, and the wolves have the train again.", dawn: "Dawn came before the coast, and in daylight their fighters had her.", abandon: "Abandoned.", practice: "Practice over.",
   };
   /* how each night is lost: the banner over its scene, the line under it, and Duc's word for next time */
@@ -244,6 +245,8 @@
     cut: ["Off the rails", "She ran onto the cut.", "My report names every cut. Set the points round it with the whistle, or stop short."],
     derail: ["Off the rails", "Too fast over the points.", `Ease her under ${C.POINTS.rough} mph before a turnout when the points are set off the straight.`],
     buffer: ["Into the buffers", "The end of a dead line.", "Look at the map before you whistle: the repeater shows the way the next points lie."],
+    barricade: ["Into the barricade", "Too fast into a station the wolves hold.", `They block the line at every station they hold. Stand her short of it, under ${C.SET_PIECE_V} mph, or wire the Resistance to take it first.`],
+    span: ["The span comes down", "Onto the bridge under their guns.", `Stand her short of a bridge the gunboats watch, under ${C.SET_PIECE_V} mph, and sink them with the cannon before you cross.`],
     frontier: ["Into the wolves' hands", "She ran over the frontier.", "East is the Wolf Empire. Whistle the points west, toward the coast."],
     dawn: ["Dawn", "The fighters have her in daylight.", "Fewer stops, and the throttle open on the straight. Wire the Resistance to take the stations ahead, so they don't stop us."],
   };
@@ -365,11 +368,11 @@
   UI.helpTabs = () => [
     ["The night", `<p><b>Run the train from Velmont to Port Clair before dawn.</b> The wolves have loaded it with the puma country's paintings. Take it, and bring as many home as you can.</p>
       <p>Stations the wolves hold stop you, and you fight for them. Gunboats stop you at bridges. Fighters come down the line between. Stop at a station of ours for coal and water and Duc's report, and send one message by telegraph.</p>
-      <p>At dawn (08:00) it is over (Classic). Run onto a cut in the line, into the buffers, or over points too fast, and it is over too.</p>
+      <p>At dawn (08:00) it is over (Classic). Run onto a cut in the line, into the buffers, or over points too fast, and it is over too; and so it is if she comes too fast into a station the wolves hold, or up to a bridge their gunboats watch. They block the line at a station, and the gunboats will bring a bridge down under her: stand her short of either, under ${C.SET_PIECE_V} mph, and fight.</p>
       <p class="gk-credit">${CREDIT}</p>`],
     ["Driving", `<p><b>Fire, pressure, pull.</b> Coal on the grate heats the boiler; the <b>steam</b> gauge on the driver's board shows its pressure, and <b>heat</b> beside it how hot the water is. Open the <b>firebox door</b> and shovel when it falls; shut the door again, or the cold air steals the heat. Past the red line the boiler is hurt; much past it, it bursts. The <b>safety valve</b> blows off steam.</p>
       <p><b>The throttle</b> turns pressure into pull. <b>The reverser</b> sets forward or back: never move it while she rolls. <b>The brake</b> stops her; a station of ours services her when she stands at its platform.</p>
-      <p><b>The points:</b> the repeater by the gauges shows how the next junction is set. Whistle once for the northern way, twice for straight on, three times for the southern. Take a turnout slowly.</p>
+      <p><b>The points:</b> the repeater by the gauges shows how the next junction is set. Whistle once for the northern way, twice for straight on, three times for the southern. Straight on, any speed will do; but points set off the straight are a turnout, and Duc will say so. Take a turnout under ${C.POINTS.rough} mph: faster and the running gear suffers, and past ${C.POINTS.derail} she leaves the rails.</p>
       <p>Coal and water run down as you go: the two gauges at the right of the bar along the top. Work the controls with the cursor (<kbd>←</kbd> <kbd>→</kbd> pick one, <kbd>↑</kbd> <kbd>↓</kbd> work it, <kbd>Space</kbd> uses it), with each one's own key, or with the mouse.</p>`],
     ["The fights", `<table class="enemy">
       <tr><td class="figc">${img(PX.People.wolf("aim", 0), 48, 60)}</td><td><p><b>A station.</b> Duc runs up the platform to the points lever and back, but only while you are firing: give him cover. Wolves come up at the windows, which light when they do. Shoot them before they shoot him, or the engine.</p></td></tr>
