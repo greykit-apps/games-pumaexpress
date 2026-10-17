@@ -74,14 +74,17 @@
     const b = t.querySelector(".gk-primary") || t.querySelector(".gk-menu button");
     if (b) b.focus({ preventScroll: true });
   }
-  /* the opening, the first time the title shows: the train alone, then the name fading in, a hold, then the
-     menu. A key or a click skips to the end of it */
-  const INTRO = { name: 1500, menu: 5000, done: 6200 };
+  /* the opening, the first time the title shows: the train alone, then the name fading in a word at a time
+     (WORD apart, the css's stagger), a hold, then the menu. A key or a click skips to the end of it */
+  const INTRO = { name: 1500, menu: 6400, done: 7600 };
   /* hidden from the moment it is built, behind the boot; the returned start runs it once the boot is done */
   function introTitle() {
     const t = document.querySelector("#title .gk-title");
     if (!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return () => showTitle();
     const later = t.querySelectorAll(".gk-menu, footer");
+    /* each word in a span of its own, numbered for its turn */
+    let w = 0;
+    for (const line of t.querySelectorAll("h1 span[data-t]")) line.innerHTML = line.dataset.t.split(" ").map(x => `<span class="pe-w" style="--w:${w++}">${esc(x)}</span>`).join(" ");
     for (const n of later) n.inert = true;
     t.classList.add("pe-intro");
     const timers = [];
