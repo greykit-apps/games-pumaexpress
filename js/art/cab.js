@@ -12,10 +12,14 @@
  * repeater, the whistle chain and the safety valve's pull hanging from the
  * roof; the coal and the shovel in the corner.
  *
- * Everything that does not move is painted once, twice in fact: lit by the
- * moon and the gauge lamp, and lit by the open fire; a frame blends the two
- * by how the fire is burning. What moves (needles, levers, doors, the fire,
- * the coal, a paw) is drawn over it in the light where it stands.
+ * It is night, and a cab at night is nearly black: the crew keep their eyes
+ * for the road, so the lamps are small and hooded, and the fire is the light
+ * that matters. Everything that does not move is painted once, then lit in
+ * layers: the night and the lamps as the base, and on their own the glow a
+ * shut firebox leaks onto the floor, the open fire, and dawn; a frame adds
+ * each over the base as strongly as it is burning. What moves (needles,
+ * levers, doors, the fire, the coal, a paw) is drawn over it in the light
+ * where it stands, never quite lost in the dark.
  *
  * PX.Cab.layout(W, H) says where each control is, for the cursor and the
  * mouse; PX.Cab.draw paints it. */
@@ -54,18 +58,38 @@
       valve: { x: X(74), y: Y(18), w: Math.round(40 * u), h: Y(152) - Y(18), cx: X(94), cy: Y(138) },
       shovel: { x: X(250), y: Y(306), w: Math.round(80 * u), h: H - Y(306), cx: X(290), cy: Y(334) },
     };
-    /* the lamps: the gauge lamp over the manifold, the oil lamp by the driver, the fire */
-    Lo.lamps = [{ x: X(412), y: Y(158), r: 170 * u, k: 0.9, col: [1.0, 0.78, 0.48] }, { x: X(600), y: Y(40), r: 230 * u, k: 0.55, col: [1.0, 0.8, 0.5] }, { x: X(129), y: Y(168), r: 120 * u, k: 0.45, col: [1.0, 0.78, 0.5] }];
-    Lo.fire = { x: X(128), y: Y(322), rx: 330 * u, ry: 260 * sy, k: 1.5, col: [1.0, 0.55, 0.22] };
-    Lo.amb = [0.3, 0.33, 0.44];
+    /* the lamps, kept small so the crew keeps its night eyes: the hooded lamp along the top of the gauge board, and
+       the one wide pool it spills below the board over the regulator, the reverser and the brake (a touch more on
+       the regulator, the driver's hand is always on it); the small lamp over the vacuum gauge; the little lamp behind
+       the water glass; and the moon, faint and cold, on the plate round the spectacle */
+    Lo.lamps = [{ x: X(412), y: Y(176), rx: 118 * u, ry: 84 * sy, k: 1.05, col: [1.0, 0.8, 0.52] }, { x: X(486), y: Y(272), rx: 240 * u, ry: 82 * sy, k: 0.6, col: [1.0, 0.78, 0.5] },
+      { x: X(384), y: Y(286), rx: 70 * u, ry: 50 * sy, k: 0.2, col: [1.0, 0.78, 0.5] }, { x: X(586), y: Y(232), rx: 52 * u, ry: 56 * sy, k: 0.3, col: [1.0, 0.78, 0.5] },
+      { x: X(70), y: Y(232), rx: 34 * u, ry: 70 * sy, k: 0.85, col: [1.0, 0.8, 0.52] }, { x: X(427), y: Y(84), rx: 290 * u, ry: 150 * sy, k: 0.2, col: [0.55, 0.66, 0.95] }];
+    /* the fire: with the door shut it leaks round the doors and through the draught slits onto the floor; open, it
+       floods the cab from below */
+    Lo.leak = { x: X(128), y: Y(370), rx: 160 * u, ry: 62 * sy, k: 1.0, col: [1.0, 0.5, 0.2] };
+    Lo.fire = { x: X(128), y: Y(306), rx: 380 * u, ry: 300 * sy, k: 1.9, col: [1.0, 0.55, 0.22] };
+    /* the night in the cab is nearly black; dawn greys it in, and by day the light through the windows fills it */
+    Lo.amb = [0.1, 0.12, 0.19];
+    Lo.dawn = [0.7, 0.66, 0.55];
     return Lo;
   };
+  /* how the light stands this frame: dawn coming, the glow round a shut door, the open fire; each 0 to 1 */
+  function lighting(S, now) {
+    const c = S.cab, heat = PX.clamp(c.grate / 6, 0.12, 1), n = (s, k) => K.vnoise(now / s, k, 31) - 0.5;
+    return {
+      dawn: K.light(S.t),
+      leak: (0.3 + heat * 0.7) * (0.9 + n(260, 1) * 0.3),
+      fire: c.door ? (0.45 + heat * 0.55) * (0.86 + n(150, 2) * 0.34 + n(45, 3) * 0.12) : 0,
+    };
+  }
   /* the light at a point, as a colour multiplier: for what is drawn over the painted cab */
-  function lightAt(Lo, x, y, fire) {
-    let r = Lo.amb[0], g = Lo.amb[1], b = Lo.amb[2];
-    for (const Lp of Lo.lamps.concat(fire > 0 ? [Object.assign({}, Lo.fire, { k: Lo.fire.k * fire })] : [])) {
+  function lightAt(Lo, x, y, lv) {
+    const am = Lo.amb.map((v, i) => v + Lo.dawn[i] * lv.dawn);
+    let r = am[0], g = am[1], b = am[2];
+    for (const Lp of Lo.lamps.concat([Object.assign({}, Lo.leak, { k: Lo.leak.k * lv.leak }), Object.assign({}, Lo.fire, { k: Lo.fire.k * lv.fire })])) {
       const dx = (x - Lp.x) / (Lp.rx || Lp.r), dy = (y - Lp.y) / (Lp.ry || Lp.r), q = 1 - (dx * dx + dy * dy);
-      if (q <= 0) continue;
+      if (q <= 0 || !Lp.k) continue;
       r += Lp.col[0] * q * q * Lp.k; g += Lp.col[1] * q * q * Lp.k; b += Lp.col[2] * q * q * Lp.k;
     }
     return [r, g, b];
@@ -145,7 +169,7 @@
   }
 
   /* ---- the painted cab: everything that does not move ---- */
-  function paintCab(Lo, fire) {
+  function paintCab(Lo) {
     const { W, H, X, Y, R, winH, u } = Lo;
     const c = K.mk(W, H), g = c.getContext("2d");
     plates.length = 0;
@@ -190,6 +214,10 @@
       }
       for (const [x, y] of [[bd.x + 4, bd.y + 4], [bd.x + bd.w - 6, bd.y + 4], [bd.x + 4, bd.y + bd.h - 6], [bd.x + bd.w - 6, bd.y + bd.h - 6]]) boss(g, x + 1, y + 1, 2, M.brass);
       /* pipes from the board's back, down behind it to the backhead */
+      /* the gauge lamp: a long hood over the board's top edge, its tube glowing under the lip */
+      const hx0 = bd.x + 12, hw = bd.w - 24, hy = bd.y - 6;
+      K.rect(g, hx0 - 1, hy - 1, hw + 2, 7, INK); K.rect(g, hx0, hy, hw, 3, M.iron[2]); K.rect(g, hx0, hy, hw, 1, M.iron[1]);
+      K.rect(g, hx0 + 2, hy + 3, hw - 4, 2, "#ffe6a8"); K.rect(g, hx0 + 4, hy + 3, hw - 8, 1, "#fff8e0");
     }
     /* the works plate in the middle of the backhead: an oval of brass, the engine's number and where she was built */
     { const ox0 = mf.x, oy0 = Math.round(Lo.Y(236)), rx = Math.round(30 * u), ry = 15;
@@ -362,20 +390,29 @@
     }
     /* grab rails on the plate's outer edges */
     for (const x of [X(8), X(626)]) { K.rect(g, x, wy0 + 24, 3, winH - wy0 - 40, M.brass[2]); K.rect(g, x, wy0 + 24, 1, winH - wy0 - 40, M.brass[0]); }
-    /* the oil lamp by the driver: brass, its glass lit */
-    const lx = Lo.lamps[1].x, ly = Lo.lamps[1].y;
-    K.rect(g, lx, 0, 1, ly - 10, M.steel[2]);
-    boss(g, lx, ly - 8, 4, M.brass); K.rect(g, lx - 4, ly - 5, 9, 11, "#ffe6a0"); K.rect(g, lx - 3, ly - 4, 7, 9, "#fff6d0"); K.rect(g, lx - 5, ly + 6, 11, 3, M.brass[2]); K.rect(g, lx - 4, ly - 6, 9, 1, M.brass[1]);
-    /* light it: the moon's cold ambient, the lamps' warmth, and the fire if this is the fire-lit copy */
-    const lights = Lo.lamps.slice();
-    if (fire) lights.push(Lo.fire);
-    K.relight(c, Lo.amb, lights);
-    /* the plates' raised letters are polished: they keep a sheen of the lamp however dark their corner of the cab */
-    for (const [t, x, y] of plates) K.text5(g, t, x, y, SHEEN);
+    /* the vacuum gauge's lamp: a small hood over the gauge, its tube showing under the lip */
+    { const G = Lo.gauges.vac, hw = G.r * 2 + 6, hx0 = G.x - hw / 2, hy = G.y - G.r - 9;
+      K.rect(g, hx0 - 1, hy - 1, hw + 2, 6, INK); K.rect(g, hx0, hy, hw, 3, M.iron[2]); K.rect(g, hx0, hy, hw, 1, M.iron[1]);
+      K.rect(g, hx0 + 2, hy + 3, hw - 4, 1, "#ffe6a8"); }
     /* the window: cut out, so the country shows through; the backhead's top and the lamp stay in front of it */
     cutWindow(c, Lo);
+    c.plates = plates.slice();
     return c;
   }
+  /* the painted cab in one light: the base is the night and the lamps; each other layer is one light alone, on
+     black, for adding over it as strongly as that light is burning */
+  const LAYERS = {
+    base: Lo => [Lo.amb, Lo.lamps],
+    dawn: Lo => [Lo.dawn, []],
+    leak: Lo => [[0, 0, 0], [Lo.leak]],
+    fire: Lo => [[0, 0, 0], [Lo.fire]],
+  };
+  const cabLayer = (Lo, k) => K.get(`cab:${Lo.W}x${Lo.H}:${k}`, () => {
+    const raw = K.get(`cab:${Lo.W}x${Lo.H}:raw`, () => paintCab(Lo)), c = K.relight(K.copy(raw), ...LAYERS[k](Lo));
+    /* the plates' raised letters are polished: they keep a sheen of the lamp however dark their corner of the cab */
+    if (k === "base") { const g = c.getContext("2d"); for (const [t, x, y] of raw.plates) K.text5(g, t, x, y, SHEEN); }
+    return c;
+  });
   /* a spectacle's shape: a rounded box, its top corners rounder than its bottom ones; grown by e pixels */
   function inSpec(x, y, sp, e) {
     const x0 = sp.x0 - e, x1 = sp.x1 + e, y0 = sp.y0 - e, y1 = sp.y1 + e;
@@ -580,9 +617,9 @@
     return K.outline(c, INK);
   });
 
-  function moving(g, S, Lo, now) {
-    const c = S.cab, fireLvl = c.door ? 0.85 + Math.sin(now / 47) * 0.08 + Math.sin(now / 13) * 0.05 : 0.08 + PX.clamp(c.grate / 10, 0, 1) * 0.06;
-    const m = (x, y) => lightAt(Lo, x, y, fireLvl).map(v => Math.max(0.62, v));
+  function moving(g, S, Lo, now, lv) {
+    /* what the driver works is kept just in sight in the dark */
+    const c = S.cab, m = (x, y) => lightAt(Lo, x, y, lv).map(v => Math.max(0.34, v));
     /* the firebox: the fire on its bars, flames, the butterfly doors sliding apart */
     const d = Lo.ctl.door, F = M.fire, heat = PX.clamp(c.grate / 6, 0.12, 1), open = c.door ? 1 : 0;
     const gap = Math.round(d.w / 2 * open);
@@ -617,13 +654,20 @@
     for (const side of [-1, 1]) {
       const x0 = side < 0 ? d.x : d.cx + gap, x1 = side < 0 ? d.cx - gap : d.x + d.w;
       if (x1 - x0 < 2) continue;
-      const S0 = M.iron.map(q => lit(q, m(d.cx, d.cy).map(v => v * 1.5)));
+      /* the leaves face the crew: the glow they leak falls on the floor, not on themselves */
+      const S0 = M.iron.map(q => lit(q, lightAt(Lo, d.cx, d.cy, Object.assign({}, lv, { leak: 0 })).map(v => Math.max(0.34, v))));
       for (let y = d.y; y < d.y + d.h; y++) for (let x = x0; x < x1; x++) { const lv = (x - x0) / Math.max(1, x1 - x0) * (side < 0 ? -0.6 : 0.6) - (y - d.y) / d.h * 0.4 + K.bayer(x, y) * 0.4; g.fillStyle = S0[PX.clamp(Math.round(1.6 - lv), 0, 3)]; g.fillRect(x, y, 1, 1); }
       K.rect(g, x0, d.y, x1 - x0, 1, S0[0]); K.rect(g, side < 0 ? x1 - 1 : x0, d.y, 1, d.h, INK);
       for (let y = d.y + 4; y < d.y + d.h - 2; y += 9) { K.rivet(g, x0 + 3, y, S0[0], INK); K.rivet(g, x1 - 5, y, S0[0], INK); }
       /* the draught slits: the fire shows through them */
       for (let i = 0; i < 3; i++) { const sw = x1 - x0 - 16; if (sw < 4) break; const gl = open ? "#1a0c06" : K.mix("#3a1a0a", "#ffb04a", heat * (0.6 + 0.4 * Math.sin(now / 90 + i))); K.rect(g, x0 + 8, d.y + 10 + i * 9, sw, 3, INK); K.rect(g, x0 + 8, d.y + 11 + i * 9, sw, 1, gl); }
       const hx = side < 0 ? x1 - 9 : x0 + 4, mb = m(hx, d.cy); K.rect(g, hx, d.cy - 6, 5, 13, INK); K.rect(g, hx + 1, d.cy - 5, 3, 11, lit(M.brass[1], mb)); K.px(g, hx + 1, d.cy - 5, lit(M.brass[0], mb));
+    }
+    /* shut, the fire shows as a hot line where the leaves meet and along their foot */
+    if (!gap) {
+      const hot = K.mix("#3a1406", "#ffb04a", heat * (0.75 + (K.vnoise(now / 120, 5, 31) - 0.5) * 0.4));
+      K.rect(g, d.cx - 1, d.y + 2, 2, d.h - 3, INK); K.rect(g, d.cx, d.y + 3, 1, d.h - 5, hot);
+      K.rect(g, d.x + 3, d.y + d.h - 1, d.w - 6, 1, hot);
     }
     /* the coal heap, low or high */
     const sh = Lo.ctl.shovel, coal = PX.clamp(c.coal / C.LOCO.coal, 0, 1), heap = Math.round((sh.h - 6) * (0.15 + 0.85 * coal));
@@ -664,14 +708,23 @@
     /* the reverser: tall, from the floor */
     const rv = Lo.ctl.reverser, rl = Math.min(Lo.R(118), rv.h - 14), ra = (-90 + c.rev * 20) * Math.PI / 180;
     lever(g, rv.cx, rv.cy, rv.cx + Math.cos(ra) * rl, rv.cy + Math.sin(ra) * rl, 4, m(rv.cx, rv.cy - 60), true);
-    K.text5(g, c.rev > 0 ? "FWD" : c.rev < 0 ? "BACK" : "MID", Math.round(rv.cx - 10), Math.round(rv.y + 14), c.rev ? "#e8c46a" : "#8f8672");
     /* the brake handle: from off (up) round to full on (down and out) */
     const b = Lo.ctl.brake, bang = -Math.PI * 0.5 - 0.3 + c.brake * 1.9, bl = Lo.R(30);
     lever(g, b.cx, b.cy, b.cx + Math.cos(bang) * bl, b.cy + Math.sin(bang) * bl, 3, m(b.cx, b.cy), true);
     /* the whistle chain and the valve's pull, hanging from the roof; pulled down when in use */
     const w = Lo.ctl.whistle, wd = c.whistleT > 0 ? 8 : 0, mw = m(w.cx, w.cy);
-    chain(g, w.cx, Lo.Y(16), w.cy - 6 + wd, mw); K.rect(g, w.cx - 9, w.cy - 6 + wd, 19, 4, INK); K.rect(g, w.cx - 8, w.cy - 5 + wd, 17, 2, lit(M.wood[1], mw));
-    tag(g, w.cx, w.cy - 1 + wd, "WHISTLE", mw);
+    /* the whistle's handle is a big brass T, polished by paws, so it catches what light there is */
+    { const hy = w.cy - 2 + wd, hw = Math.round(16 * Lo.u), mb = mw.map(v => Math.max(0.6, v)), BR = M.brass.map(q => lit(q, mb));
+      chain(g, w.cx, Lo.Y(16), hy - 6, mw);
+      K.rect(g, w.cx - 2, hy - 7, 5, 6, INK); K.rect(g, w.cx - 1, hy - 6, 3, 5, BR[2]); K.px(g, w.cx - 1, hy - 6, BR[0]);
+      K.rect(g, w.cx - hw - 1, hy - 4, hw * 2 + 3, 9, INK);
+      for (const ex of [w.cx - hw, w.cx + hw]) K.disc(g, ex, hy, 6, 6, INK);
+      pipe(g, [[w.cx - hw, hy], [w.cx + hw, hy]], 3, BR);
+      for (const ex of [w.cx - hw, w.cx + hw]) boss(g, ex, hy, 5, BR);
+      /* the glint along its top, and a spark on each knob */
+      K.rect(g, w.cx - hw + 5, hy - 2, hw * 2 - 10, 1, "#fff2c4");
+      for (const ex of [w.cx - hw, w.cx + hw]) K.px(g, ex - 2, hy - 3, "#fffbe8");
+      tag(g, w.cx, hy + 8, "WHISTLE", mw); }
     const v = Lo.ctl.valve, vd = c.valve ? 8 : 0, mv = m(v.cx, v.cy);
     chain(g, v.cx, Lo.Y(16), v.cy - 6 + vd, mv); K.ring(g, v.cx, v.cy + vd, 5, INK, 3); K.ring(g, v.cx, v.cy + vd, 4, lit(M.brass[1], mv), 2);
     tag(g, v.cx, v.cy + 6 + vd, "VALVE", mv);
@@ -726,9 +779,6 @@
   /* ---- a frame ---- */
   Cab.draw = (g, S, ui, now, fx) => {
     const W = g.canvas.width, H0 = g.canvas.height, Lo = Cab.layout(W, H0);
-    /* by day the light through the windows fills the cab: its ambient rises with the sky, in four steps */
-    const day = Math.round(K.light(S.t) * 4) / 4;
-    if (day > 0) Lo.amb = Lo.amb.map((a, i) => a + ([0.8, 0.78, 0.74][i] - a) * day);
     Cab.last = Lo;
     const vp = { x: 0, y: 0, w: W, h: Lo.winH };
     const cam = Cab.camera(Lo, vp), wc = World.turned(S, cam, now);
@@ -744,13 +794,29 @@
     const vt = Cab.valveTop, wt = Cab.whistleTop;
     if (S.cab.valve && vt) for (let i = 0; i < 8; i++) { const t = (now / 80 + i) % 8; g.fillStyle = `rgba(235,240,248,${(0.55 - t * 0.065).toFixed(2)})`; K.disc(g, vt.x + Math.sin(i * 3 + now / 70) * 3 - t * 2, vt.y - t * 7, 2 + t * 2.4, 2 + t * 1.6); }
     if (S.cab.whistleT > 0 && wt) for (let i = 0; i < 5; i++) { const t = (now / 50 + i) % 5; g.fillStyle = `rgba(240,244,250,${(0.6 - t * 0.11).toFixed(2)})`; K.disc(g, wt.x, wt.y - t * 5, 1.5 + t * 1.8, 1 + t); }
-    /* the cab, lit by the lamps, and by the fire as it burns */
-    const c = S.cab, fireLvl = c.door ? 0.85 + Math.sin(now / 47) * 0.08 + Math.sin(now / 13) * 0.05 : 0.06 + PX.clamp(c.grate / 10, 0, 1) * 0.08;
-    g.drawImage(K.get(`cab:${W}x${H0}:0:${day}`, () => paintCab(Lo, false)), 0, 0);
-    g.globalAlpha = PX.clamp(fireLvl, 0, 1);
-    g.drawImage(K.get(`cab:${W}x${H0}:1:${day}`, () => paintCab(Lo, true)), 0, 0);
+    /* the cab: the night and its lamps, then each other light added over it as strongly as it burns */
+    const lv = lighting(S, now);
+    g.drawImage(cabLayer(Lo, "base"), 0, 0);
+    g.globalCompositeOperation = "lighter";
+    for (const k of ["dawn", "leak", "fire"]) if (lv[k] > 0.01) { g.globalAlpha = PX.clamp(lv[k], 0, 1); g.drawImage(cabLayer(Lo, k), 0, 0); }
     g.globalAlpha = 1;
-    moving(g, S, Lo, now);
+    /* the open fire on the inside of the glass, faint, low on the side toward it */
+    if (lv.fire > 0) {
+      const sp = Lo.specs[0], gr = g.createRadialGradient(sp.x0, sp.y1, 0, sp.x0, sp.y1, (sp.x1 - sp.x0) * 0.7);
+      gr.addColorStop(0, `rgba(255,120,50,${(0.16 * lv.fire).toFixed(3)})`); gr.addColorStop(1, "rgba(255,120,50,0)");
+      g.fillStyle = gr; g.fillRect(sp.x0, sp.y0, sp.x1 - sp.x0, sp.y1 - sp.y0);
+    }
+    g.globalCompositeOperation = "source-over";
+    moving(g, S, Lo, now, lv);
+    /* the haze of the cab caught in the firelight over the open door */
+    if (lv.fire > 0) {
+      const d = Lo.ctl.door, r = 150 * Lo.u, gr = g.createRadialGradient(d.cx, d.y, 0, d.cx, d.y, r);
+      gr.addColorStop(0, `rgba(255,140,60,${(0.2 * lv.fire).toFixed(3)})`); gr.addColorStop(0.5, `rgba(200,80,30,${(0.07 * lv.fire).toFixed(3)})`); gr.addColorStop(1, "rgba(200,80,30,0)");
+      g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.fillRect(d.cx - r, d.y - r, r * 2, r * 2); g.globalCompositeOperation = "source-over";
+    }
+    /* the dark closing in at the corners, less as dawn comes */
+    { const gr = K.get(`vignette:${W}x${H0}`, () => { const v = g.createRadialGradient(W * 0.55, H0 * 0.45, Math.min(W, H0) * 0.3, W * 0.55, H0 * 0.45, Math.hypot(W, H0) * 0.62); v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,0.55)"); return v; });
+      g.globalAlpha = 1 - lv.dawn * 0.6; g.fillStyle = gr; g.fillRect(0, 0, W, H0); g.globalAlpha = 1; }
     if (ui.cursor) cursor(g, Lo, ui.cursor, now);
     /* a hurt boiler weeps steam at its joints */
     if (S.dmg.boiler > 35) for (let i = 0; i < Math.floor(S.dmg.boiler / 20); i++) {
