@@ -75,16 +75,17 @@
     if (b) b.focus({ preventScroll: true });
   }
   /* the opening, the first time the title shows: the train alone, then the name fading in a word at a time
-     (WORD apart, the css's stagger), a hold, then the menu. A key or a click skips to the end of it */
-  const INTRO = { name: 1500, menu: 6400, done: 7600 };
+     (each word WORDS seconds after the first, "The Puma" close together), a hold, then the menu. A key or a
+     click skips to the end of it */
+  const INTRO = { name: 1500, menu: 5800, done: 7000 }, WORDS = [0, 0.4, 1.4];
   /* hidden from the moment it is built, behind the boot; the returned start runs it once the boot is done */
   function introTitle() {
     const t = document.querySelector("#title .gk-title");
     if (!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return () => showTitle();
     const later = t.querySelectorAll(".gk-menu, footer");
-    /* each word in a span of its own, numbered for its turn */
+    /* each word in a span of its own, with its turn */
     let w = 0;
-    for (const line of t.querySelectorAll("h1 span[data-t]")) line.innerHTML = line.dataset.t.split(" ").map(x => `<span class="pe-w" style="--w:${w++}">${esc(x)}</span>`).join(" ");
+    for (const line of t.querySelectorAll("h1 span[data-t]")) line.innerHTML = line.dataset.t.split(" ").map(x => `<span class="pe-w" style="--w:${WORDS[Math.min(w++, WORDS.length - 1)]}s">${esc(x)}</span>`).join(" ");
     for (const n of later) n.inert = true;
     t.classList.add("pe-intro");
     const timers = [];
