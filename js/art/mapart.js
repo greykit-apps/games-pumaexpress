@@ -1,12 +1,12 @@
 /* The Puma Express -- the map (key 4 or Tab): the railway across the puma
  * country as a driver's working map, dark paper and pale ink. The coast in
  * the west, the two rivers, the line in double strokes; the stations, ours
- * in tawny and the wolves' in red with their mark; the bridges, with a boat
+ * in tawny and the wolves' a grey wolf's head; the bridges, with a boat
  * where gunboats watch; the cuts the Resistance has told of, crossed out; the
  * junctions, with the way the next one is set; the train, a ringed arrow.
  *
  * Told by shape as well as colour: a station of ours is a round, a held one
- * a square, Port Clair a star, a cut a cross, a guarded bridge a boat. With
+ * a wolf's head, Port Clair a star, a cut a cross, a guarded bridge a boat. With
  * the route aid, the way the points lead is drawn as a lit line, to the coast
  * or to wherever it ends. */
 "use strict";
@@ -199,13 +199,27 @@
     return c;
   });
 
+  /* a held station: a grey wolf's head, 11 by 11 as the round is, so the names keep clear of it; its eyes in the wolves' red */
+  const WOLF_HEAD = [
+    ".o.......o.",
+    "odo.....odo",
+    "odmo...omdo",
+    "ommmooommmo",
+    "omdmmdmmdmo",
+    "omeemdmeemo",
+    "oLLmmmmmLLo",
+    ".oLLmmmLLo.",
+    "..oLmmmLo..",
+    "...onnno...",
+    "....ooo....",
+  ];
   function station(g, x, y, kind, col) {
     x = Math.round(x); y = Math.round(y);
     if (kind === "final") {
       for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 3 : 7; K.line(g, x, y, x + Math.cos(a) * r, y + Math.sin(a) * r, col, 2); }
       K.disc(g, x, y, 2, 2, col); return;
     }
-    if (kind === "held") { K.rect(g, x - 5, y - 5, 11, 11, INK); K.rect(g, x - 4, y - 4, 9, 9, col); K.px(g, x - 2, y - 3, INK); K.px(g, x + 2, y - 3, INK); K.rect(g, x - 1, y, 3, 2, INK); return; }
+    if (kind === "held") { g.drawImage(K.get(`mapwolf:${col}`, () => K.map(WOLF_HEAD, { o: INK, m: M.wolf[1], d: M.wolf[3], L: M.wolf[0], e: col, n: INK })), x - 5, y - 5); return; }
     K.disc(g, x, y, 5, 5, INK); K.disc(g, x, y, 4, 4, col); K.disc(g, x, y, 2, 2, INK);
   }
   function boatMark(g, x, y, col) { x = Math.round(x); y = Math.round(y); K.poly(g, [[x - 6, y - 1], [x + 6, y - 1], [x + 4, y + 3], [x - 4, y + 3]], INK); K.poly(g, [[x - 5, y], [x + 5, y], [x + 3, y + 2], [x - 3, y + 2]], col); K.rect(g, x - 1, y - 4, 3, 3, col); }
