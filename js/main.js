@@ -1,9 +1,10 @@
 /* The Puma Express -- boot, title, the loop, and everything between.
  *
  * The greykit.games boot (the canon @gk-title block, STANDARD.md §3) while
- * the art is drawn, then the game's own title: the train running through the
- * night behind the name and the menu (§6's items and keys, read by the
- * block's own key lookup), the credit. Then a night. The engine runs at fifty
+ * the art is drawn, then the block's default title in the engine's green and
+ * brass: the train running through the night behind the name and the menu
+ * (§6's items and keys), the credit. A new night opens on the Resistance's
+ * orders, then the yard at Velmont. The engine runs at fifty
  * steps a second (or forty, or sixty: Settings), whatever the screen's rate;
  * Duc says what he sees, and the engine is heard. */
 "use strict";
@@ -29,15 +30,17 @@
   game.applyLook = () => { $("stage").classList.toggle("scan", !!PX.prefs.scanlines); };
   game.syncAids = () => { for (const [k] of PX.AID_LIST) game.ui.aids[k] = PX.aid(k); };
 
-  /* ---- the title ---- */
+  /* ---- the title: the canon default (@gk-title v0.4), in the engine's green lined out in brass ---- */
   function titleCfg() {
     const saved = PX.loadGame(), best = PX.scores()[0], d = C.DIFF[PX.store.get(PX.KEY_DIFF, 1)] || C.DIFF[1];
     return {
       name: "The Puma Express",
+      sub: "Velmont to Port Clair ·\none night · forty-eight paintings",   /* the break is kept by the css (pre-line) */
+      scene: true,
       primary: saved ? "resume" : "new",
       items: [
-        saved && { act: "resume", label: "Resume game", key: "R", meta: L.nodes[L.edges[saved.S.tr.e].a].name.replace("Velmont junction", "Velmont"), time: PX.hhmm(saved.S.t) },
-        { act: "new", label: "New game", key: "N", meta: d.name, time: PX.hhmm(d.start) },
+        saved && { act: "resume", label: "Resume game", key: "R", meta: `${PX.hhmm(saved.S.t)}, ${L.nodes[L.edges[saved.S.tr.e].a].name.replace("Velmont junction", "Velmont")}` },
+        { act: "new", label: "New game", key: "N", meta: d.name },
         { act: "practice", label: "Practice a fight", key: "P", meta: "station, air, bridge" },
         { act: "scores", label: "High scores", key: "O", meta: best ? best.score.toLocaleString("en-US") : "" },
         "gap",
@@ -47,41 +50,11 @@
       ],
     };
   }
-  /* the Resistance's rubber stamp on its orders: a puma's paw, a pixel at a time */
-  const PAW = (() => {
-    const g = ["....XXX..XXX....", "....XXX..XXX....", "XX..XXX..XXX..XX", "XXX..........XXX", "XXX..........XXX", "......XXXX......", "....XXXXXXXX....",
-      "...XXXXXXXXXX...", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "..XXXXXXXXXXXX..", "...XXXX..XXXX...", "....XX....XX...."];
-    let d = "";
-    g.forEach((r, y) => r.replace(/X+/g, (m, x) => { d += `M${x} ${y}h${m.length}v1h-${m.length}z`; return m; }));
-    return `<svg class="tt-paw" viewBox="0 0 16 13" shape-rendering="crispEdges"><path fill="currentColor" d="${d}"/></svg>`;
-  })();
-  function titleHTML(cfg) {
-    const items = cfg.items.filter(Boolean), gap = items.indexOf("gap");
-    const main = items.slice(0, gap), util = items.slice(gap + 1);
-    let i = 0;
-    /* a line of the orders: the key, the action, dots to what it is and when it leaves */
-    const btn = (it, big) => `<button data-act="${it.act}" class="pr${it.act === cfg.primary ? " dflt" : ""}" style="--i:${i++}"><kbd>${esc(it.key)}</kbd><span class="lbl">${esc(it.label)}</span>` +
-      (big ? `<span class="dots" aria-hidden="true"></span><span class="meta">${esc(it.meta || "")}</span><span class="tm">${esc(it.time || "")}</span>` : "") + "</button>";
-    return `<div class="pe-title">
-      <canvas class="pe-scene" aria-hidden="true"></canvas><div class="pe-shade" aria-hidden="true"></div>
-      <main>
-        <h1 class="pe-mark" aria-label="${esc(cfg.name)}"><span class="plate" aria-hidden="true"><span class="the">The</span><span class="nm">Puma Express</span></span></h1>
-        <nav class="pe-menu" aria-label="Main menu">
-          <header class="tt-head" aria-hidden="true"><p class="tt-co">Resistance · operation orders</p><p class="tt-svc">The train at Velmont</p><span class="tt-secret">Most secret</span></header>
-          <div class="od" aria-hidden="true"><p><b>1. Situation.</b> The wolves have loaded forty-eight paintings onto a train in the yards at Velmont, bound for the Empire.</p>
-            <p><b>2. Object.</b> Seize the train. Get it to Port Clair before dawn. Send Resistance orders from stations. Godspeed.</p><p class="od-h"><b>3. Method.</b></p></div>
-          ${main.map(it => btn(it, true)).join("")}
-          <p class="od-h adm" aria-hidden="true"><b>4. Administration.</b></p><div class="util">${util.map(it => btn(it, false)).join("")}</div>
-          <p class="tt-foot" aria-hidden="true"><span>For the Resistance. Burn after reading.</span>${PAW}</p>
-        </nav>
-      </main>
-      <footer class="pe-foot"><span class="gk-credit">${UI.CREDIT}</span></footer>
-    </div>`;
-  }
   function openTitle() {
     game.mode = "title";
     const el = $("title");
     el.innerHTML = titleHTML(titleCfg());
+    el.querySelector(".scene").innerHTML = '<canvas class="pe-scene"></canvas>';
     el.hidden = false;
     $("game").hidden = true;
     document.body.classList.add("on-title");
@@ -93,20 +66,21 @@
     const k = scaleK();
     cv.width = Math.ceil(innerWidth / k); cv.height = Math.ceil(innerHeight / k);
   }
-  function revealTitle(print = true) {
-    const t = document.querySelector("#title .pe-title");
+  /* the canon entrance (the menu prints in, the name decodes), or, coming back to it, only the focus */
+  function showTitle(print = true) {
+    const t = document.querySelector("#title .gk-title");
     if (!t) return;
-    if (print) t.classList.add("pe-print");
-    const b = t.querySelector(".pe-menu .dflt") || t.querySelector(".pe-menu button");
+    if (print) return revealTitle(t);
+    const b = t.querySelector(".gk-primary") || t.querySelector(".gk-menu button");
     if (b) b.focus({ preventScroll: true });
   }
-  game.refreshTitle = () => { if (game.mode !== "title") return; openTitle(); revealTitle(false); };
+  game.refreshTitle = () => { if (game.mode !== "title") return; openTitle(); showTitle(false); };
   game.toTitle = () => {
     UI.close(true);
     game.S = null; game.ui.mapView = false;
     SFX.stopLoops();
     I.clear(); HUD.clear(); PX.FX.clear();
-    openTitle(); revealTitle();
+    openTitle(); showTitle();
     if (!SMALL.matches) SFX.startTune();
   };
   function titleAct(a) {
@@ -124,13 +98,8 @@
     /* Tab goes round the title's own controls, never out of the page */
     if (k === "Tab") { const f = UI.focusables($("title")); if (f.length) { ev.preventDefault(); const i = f.indexOf(document.activeElement); f[i < 0 ? 0 : (i + (ev.shiftKey ? -1 : 1) + f.length) % f.length].focus(); } return; }
     if (k === "Enter" || k === " " || k === "Shift") return;
-    const menu = document.querySelector("#title .pe-menu"), hit = menu && titleKeyButton(menu, k);
+    const menu = document.querySelector("#title .gk-menu"), hit = menu && titleKeyButton(menu, k);
     if (hit) { ev.preventDefault(); titleAct(hit.dataset.act); return; }
-    const row = (k === "ArrowLeft" || k === "ArrowRight") && document.activeElement && document.activeElement.closest(".pe-menu .util");
-    if (row) {
-      const bs = [...row.querySelectorAll("button")], i = bs.indexOf(document.activeElement);
-      ev.preventDefault(); bs[(i + (k === "ArrowRight" ? 1 : -1) + bs.length) % bs.length].focus(); return;
-    }
     if (menu) titleArrow(menu, ev);
   }
 
@@ -355,7 +324,8 @@
   }
   function titleFrame(dt) {
     const cv = document.querySelector("#title .pe-scene");
-    if (!cv || UI.sheet && UI.sheet.el.classList.contains("full")) return;
+    /* nothing to draw into until the window has a size (a pane still opening, a frame not yet laid out) */
+    if (!cv || !cv.width || !cv.height || UI.sheet && UI.sheet.el.classList.contains("full")) return;
     R.title(cv, performance.now(), dt / 1000);
   }
 
@@ -451,7 +421,7 @@
   /* ---- boot ---- */
   function boot() {
     game.applySpeed(); game.applyLook(); game.syncAids(); syncSound();
-    injectTitleCSS();     /* the boot's; the title and the sheets are css/pumaexpress.css */
+    injectTitleCSS();     /* the boot's and the title's; the title's colours and the sheets are css/pumaexpress.css */
     fit();
     const q = new URLSearchParams(location.search);
     const run = SMALL.matches || q.has("play") ? { finish: async () => {}, cancel() {} } : runBoot({ lines: [bootReloadLine(), "raising steam at Velmont"] });
@@ -477,7 +447,7 @@
         openTitle();
         const saved = PX.loadGame(), best = PX.scores()[0];
         run.finish(["the art is loaded", saved ? "a night in progress" : best ? `best: ${best.score.toLocaleString("en-US")}` : "steam up"]).then(() => {
-          revealTitle(!q.has("shot"));
+          showTitle(!q.has("shot"));
           const sheet = q.get("sheet");
           if (sheet && UI[sheet]) UI[sheet]();
         });

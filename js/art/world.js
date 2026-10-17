@@ -83,7 +83,7 @@
   /* w wide as seen, with pad more either side for the view to swing into (see W.turned) */
   function skyCanvas(w0, h, l, look, pad = 0) {
     return K.get(`sky:${w0}x${h}:${lb(l)}:${look}${pad ? `:${pad}` : ""}`, () => {
-      const w = w0 + pad * 2, c = K.mk(w, h), g = c.getContext("2d"), img = g.createImageData(w, h), d = img.data;
+      const c = K.mk(w0 + pad * 2, h), w = c.width, g = c.getContext("2d"), img = g.createImageData(w, c.height), d = img.data;
       const cols = K.sky(l).map(rgb), mx = pad + w0 * MOON_DIR(look), my = h * 0.3;
       for (let y = 0; y < h; y++) {
         const t = Math.pow(y / Math.max(1, h - 1), 1.25) * 4, i = Math.min(3, Math.floor(t)), f = t - i;
