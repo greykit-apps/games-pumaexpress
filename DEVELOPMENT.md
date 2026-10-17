@@ -66,7 +66,7 @@ index.html?play=<0-2>&seed=<n>
 - `practice=station`, `practice=air` or `practice=bridge` opens one fight on its own.
 - `view=cab`, `front`, `rear` or `map` picks the view; `v=<mph>` sets her running; `t=<minutes on from the midnight before the night>` sets the clock (22:30 is 1350, first light 1770, dawn 1920); `raid=1` brings fighters at once.
 - `pause=1` opens on the pause menu.
-- `end=won`, `dawn`, `burst`, `boiler`, `motion`, `cut`, `derail`, `buffer` or `frontier` ends the night at once, to see its scene and the end sheet beside it (pair `dawn` with `t=1925` for its daylight).
+- `end=won`, `dawn`, `burst`, `boiler`, `motion`, `cut`, `derail`, `buffer`, `barricade`, `span` or `frontier` ends the night at once, to see its scene and the end sheet beside it (pair `dawn` with `t=1925` for its daylight).
 
 Without `play`, `sheet=<name>` opens a title sheet after the boot (`help`, `settings`, `about`, `scores`), and `shot=1` reveals the title without its print-in.
 

@@ -45,6 +45,9 @@
           const need = cab.coal < 60 || cab.water < 60 || S.repairAt === stn.n;
           if (need) stopAt = stn.d + 0.05;
         }
+        /* a held station or a watched bridge: crawl up to it, under the speed she can be pulled up from */
+        const blk = ahead.find(a => (a.k === "node" && L.nodes[a.n].kind === "st" && S.st[a.n].held && a.d > C.BARRICADE_AT - 0.1) || (a.k === "bridge" && S.br[a.e].guarded && a.d > C.SET_PIECE_AT - 0.1));
+        if (blk) stopAt = Math.min(stopAt, blk.d - (blk.k === "node" ? C.BARRICADE_AT : C.SET_PIECE_AT) + 0.1);
         const cut = ahead.find(a => a.k === "cut" || a.k === "end" || a.k === "wolf");
         if (cut) stopAt = Math.min(stopAt, cut.d - 0.4);
         if (stopAt < Infinity) { const vs = Math.sqrt(Math.max(0, 2 * 3.2 * stopAt * 120)); vmax = Math.min(vmax, vs); }

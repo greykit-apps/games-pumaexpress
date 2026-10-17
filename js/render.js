@@ -109,7 +109,7 @@
         case "boatHit": PX.BridgeArt.splash(e.bear, e.range, true); { const G = PX.BridgeArt.last; if (G) FX.boom(G.xB(e.bear), G.yR(e.range) - 4, 1.2); } break;
         case "boatFire": PX.BridgeArt.boatFire(e.id); break;
         case "nearMiss": PX.BridgeArt.nearMiss(e.x); R.shake = Math.max(R.shake, 2); break;
-        case "over": if (e.why === "burst" || e.why === "boiler") R.shake = 10; if (e.why === "derail" || e.why === "cut" || e.why === "buffer") R.shake = 12; break;
+        case "over": if (e.why === "burst" || e.why === "boiler") R.shake = 10; if (e.why === "derail" || e.why === "cut" || e.why === "buffer" || e.why === "barricade" || e.why === "span") R.shake = 12; break;
       }
     }
   };
