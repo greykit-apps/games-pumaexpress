@@ -50,6 +50,7 @@
     };
   }
   function openTitle() {
+    if (game.intro) game.intro.cancel();
     game.mode = "title";
     const el = $("title");
     el.innerHTML = titleHTML(titleCfg());
@@ -72,6 +73,31 @@
     if (print) return revealTitle(t);
     const b = t.querySelector(".gk-primary") || t.querySelector(".gk-menu button");
     if (b) b.focus({ preventScroll: true });
+  }
+  /* the opening, the first time the title shows: the train alone, then the name fading in, a hold, then the
+     menu. A key or a click skips to the end of it */
+  const INTRO = { name: 1500, menu: 5000, done: 6200 };
+  /* hidden from the moment it is built, behind the boot; the returned start runs it once the boot is done */
+  function introTitle() {
+    const t = document.querySelector("#title .gk-title");
+    if (!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return () => showTitle();
+    const later = t.querySelectorAll(".gk-menu, footer");
+    for (const n of later) n.inert = true;
+    t.classList.add("pe-intro");
+    const timers = [];
+    const menu = () => {
+      game.intro = null;
+      for (const n of later) n.inert = false;
+      t.classList.add("pe-name", "pe-menu", "gk-rise");
+      showTitle(false);
+      timers.push(setTimeout(() => t.classList.remove("pe-intro", "pe-name", "pe-menu"), INTRO.done - INTRO.menu));
+    };
+    const start = () => { if (game.intro === intro) timers.push(setTimeout(() => t.classList.add("pe-name"), INTRO.name), setTimeout(menu, INTRO.menu)); };
+    const intro = game.intro = {
+      cancel() { timers.forEach(clearTimeout); game.intro = null; },
+      skip() { this.cancel(); game.skippedAt = performance.now(); for (const n of later) n.inert = false; t.classList.remove("pe-intro", "pe-name", "pe-menu"); showTitle(false); },
+    };
+    return start;
   }
   game.refreshTitle = () => { if (game.mode !== "title") return; openTitle(); showTitle(false); };
   game.toTitle = () => {
@@ -348,6 +374,7 @@
     SFX.unlock();
     if (game.mode === "title" && !SFX.tune && !SMALL.matches) SFX.startTune();
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (game.intro) { ev.preventDefault(); game.intro.skip(); return; }
     if (UI.sheet) { UI.key(ev); return; }
     const k = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
     if (k === "m" && !(ev.target.closest && ev.target.closest("input"))) { ev.preventDefault(); game.toggleMute(); return; }
@@ -371,7 +398,7 @@
   addEventListener("blur", () => { I.clear(); if (game.mode === "play") game.pause(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) { checkpoint(); if (game.mode === "play") game.pause(); } });
   addEventListener("pagehide", () => checkpoint());
-  document.addEventListener("pointerdown", () => { SFX.unlock(); if (game.mode === "title" && !SFX.tune && !SMALL.matches) SFX.startTune(); }, true);
+  document.addEventListener("pointerdown", () => { SFX.unlock(); if (game.intro) game.intro.skip(); if (game.mode === "title" && !SFX.tune && !SMALL.matches) SFX.startTune(); }, true);
   document.addEventListener("pointerover", ev => {
     if (ev.pointerType !== "mouse") return;
     const b = ev.target.closest && ev.target.closest("button:not(:disabled), summary");
@@ -390,7 +417,8 @@
     if (n === null || S.pts[n] === undefined) return;
     events(S, E.setPoints(S, n, (S.pts[n] + 1) % 3));
   });
-  $("title").addEventListener("click", ev => { const b = ev.target.closest("[data-act]"); if (b) titleAct(b.dataset.act); });
+  /* not the click that skipped the opening, landing on a row that was not there when it was pressed */
+  $("title").addEventListener("click", ev => { const b = ev.target.closest("[data-act]"); if (b && !(performance.now() - (game.skippedAt || 0) < 600)) titleAct(b.dataset.act); });
   $("snd").addEventListener("click", () => game.toggleMute());
   $("pausebtn").addEventListener("click", () => game.pause());
   $("screen").addEventListener("contextmenu", ev => ev.preventDefault());
@@ -444,9 +472,10 @@
         if (q.has("end")) { const ev = []; if (q.get("end") === "won") E.win(S, ev); else E.end(S, q.get("end"), ev); events(S, ev); }
       } else {
         openTitle();
+        const opening = q.has("shot") || q.has("sheet") ? () => showTitle(false) : introTitle();
         const saved = PX.loadGame(), best = PX.scores()[0];
         run.finish(["the art is loaded", saved ? "a night in progress" : best ? `best: ${best.score.toLocaleString("en-US")}` : "steam up"]).then(() => {
-          showTitle(!q.has("shot"));
+          opening();
           const sheet = q.get("sheet");
           if (sheet && UI[sheet]) UI[sheet]();
         });
