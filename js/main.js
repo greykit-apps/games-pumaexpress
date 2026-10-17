@@ -20,11 +20,16 @@
     SFX.setMuted(!SFX.muted);
     try { globalThis.localStorage.setItem("pumaexpress_muted_v1", SFX.muted ? "1" : "0"); } catch (e) { /* no storage */ }
     syncSound();
-    if (!SFX.muted) { SFX.play("menu"); if (game.mode === "title" && !SMALL.matches) SFX.startTune(); }
+    if (!SFX.muted) { SFX.play("menu"); titleTune(); }
     if (game.mode === "play") HUD.toast(SFX.muted ? "Sound off" : "Sound on", "", 1200);
   };
   function syncSound() { const b = $("snd"); if (b) { b.setAttribute("aria-pressed", String(!SFX.muted)); b.classList.toggle("muted", SFX.muted); } }
   const SMALL = matchMedia("(max-width: 759px), (max-height: 479px)");
+  /* the title tune runs from the boot's first line, so the title fades in on music already playing.
+     The browser holds a page's sound until its first key or click: the tune waits at its first bar
+     until then, and wake() lets it go */
+  const titleTune = () => { if ((game.mode === "boot" || game.mode === "title") && !SFX.tune && !SMALL.matches) SFX.startTune(); };
+  const wake = () => { SFX.unlock(); titleTune(); };
 
   game.applySpeed = () => { game.step = 1000 / (PX.SPEEDS[PX.prefs.speed] || PX.SPEEDS.classic)[1]; };
   game.applyLook = () => { $("stage").classList.toggle("scan", !!PX.prefs.scanlines); };
@@ -376,8 +381,6 @@
 
   /* ---- keys ---- */
   document.addEventListener("keydown", ev => {
-    SFX.unlock();
-    if (game.mode === "title" && !SFX.tune && !SMALL.matches) SFX.startTune();
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (game.intro) { ev.preventDefault(); game.intro.skip(); return; }
     if (UI.sheet) { UI.key(ev); return; }
@@ -399,11 +402,13 @@
     }
     I.down(ev);
   });
+  /* on the window, ahead of the boot, which keeps the key that skips it from the document */
+  addEventListener("keydown", wake, true);
   document.addEventListener("keyup", ev => I.up(ev));
   addEventListener("blur", () => { I.clear(); if (game.mode === "play") game.pause(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) { checkpoint(); if (game.mode === "play") game.pause(); } });
   addEventListener("pagehide", () => checkpoint());
-  document.addEventListener("pointerdown", () => { SFX.unlock(); if (game.intro) game.intro.skip(); if (game.mode === "title" && !SFX.tune && !SMALL.matches) SFX.startTune(); }, true);
+  document.addEventListener("pointerdown", () => { wake(); if (game.intro) game.intro.skip(); }, true);
   document.addEventListener("pointerover", ev => {
     if (ev.pointerType !== "mouse") return;
     const b = ev.target.closest && ev.target.closest("button:not(:disabled), summary");
@@ -456,6 +461,7 @@
     injectTitleCSS();     /* the boot's and the title's; the title's colours and the sheets are css/pumaexpress.css */
     fit();
     const q = new URLSearchParams(location.search);
+    if (!q.has("play") && !q.has("shot")) wake();
     const run = SMALL.matches || q.has("play") ? { finish: async () => {}, cancel() {} } : runBoot({ lines: [bootReloadLine(), "raising steam at Velmont"] });
     setTimeout(() => {
       PX.People.ducFace(); PX.People.paw();

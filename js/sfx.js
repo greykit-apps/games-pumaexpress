@@ -135,7 +135,8 @@
 
   /* ---- the title tune: ours. D minor at 104: an accordion with its tremolo,
    * an oom-pah of bass and chord, the train's rhythm on brushes; it opens and
-   * closes on the whistle. Lengths are sixteenths. ---- */
+   * closes on the whistle. Lengths are sixteenths. Each time it starts, a long
+   * blow on the engine's whistle comes first, in place of the opening one. ---- */
   const NOTE = n => { const m = /^([A-G])(b|#)?(\d)$/.exec(n); const k = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === "b" ? -1 : m[2] === "#" ? 1 : 0); return 440 * Math.pow(2, (k + (+m[3] + 1) * 12 - 69) / 12); };
   const parse = s => s.split(/\s+/).filter(x => x && x !== "|").map(t => { const [n, l] = t.split(":"); return [n === "r" ? 0 : NOTE(n), parseInt(l, 10)]; });
   const LEAD = parse(`r:16 |
@@ -181,7 +182,8 @@
     const bass = (f, at, dur) => { const o = a.createOscillator(), e = a.createGain(), lp = a.createBiquadFilter(); o.type = "triangle"; o.frequency.value = f; lp.type = "lowpass"; lp.frequency.value = 500; e.gain.setValueAtTime(0, at); e.gain.linearRampToValueAtTime(0.45, at + 0.01); e.gain.exponentialRampToValueAtTime(0.01, at + dur); o.connect(lp); lp.connect(e); e.connect(g); o.start(at); o.stop(at + dur + 0.02); };
     const brush = (at, v) => { const s = a.createBufferSource(), f = a.createBiquadFilter(), e = a.createGain(); s.buffer = noiseBuf; f.type = "bandpass"; f.frequency.value = 2800; f.Q.value = 0.6; e.gain.setValueAtTime(0.0008, at); e.gain.exponentialRampToValueAtTime(0.12 * v, at + 0.02); e.gain.exponentialRampToValueAtTime(0.001, at + 0.13); s.connect(f); f.connect(e); e.connect(g); s.start(at, Math.random()); s.stop(at + 0.16); };
     const steam = at => { for (const f of [466, 587, 698]) { const o = a.createOscillator(), e = a.createGain(); o.type = "triangle"; o.frequency.setValueAtTime(f * 0.95, at); o.frequency.linearRampToValueAtTime(f, at + 0.1); e.gain.setValueAtTime(0, at); e.gain.linearRampToValueAtTime(0.05, at + 0.08); e.gain.setValueAtTime(0.05, at + 0.9); e.gain.linearRampToValueAtTime(0, at + 1.1); o.connect(e); e.connect(g); e.connect(room); o.start(at); o.stop(at + 1.15); } };
-    const st = { g, fb, t0: a.currentTime + 0.1, n: 0, timer: null };
+    whistle(g, 1000, 0.12);
+    const st = { g, fb, t0: a.currentTime + 1.05, n: 0, timer: null };
     const sched = () => {
       const late = a.currentTime + 0.02 - st.t0;
       if (st.n * STEP < late) st.n = Math.ceil(late / STEP);
@@ -191,7 +193,7 @@
           else if (e[0] === "b") bass(e[1], at, e[2] * STEP);
           else if (e[0] === "c") for (const f of e[1]) reed(f, at, e[2] * STEP, 0.022);
           else if (e[0] === "k") brush(at, e[1]);
-          else if (e[0] === "w") steam(at);
+          else if (e[0] === "w" && st.n) steam(at);
         }
       }
     };
