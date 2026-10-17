@@ -119,10 +119,10 @@
     if (showAhead && now - (HUD.aheadAt || 0) > 250) { HUD.aheadAt = now; ahead(S); }
     /* the cab's control, named */
     const ctl = scene === "cab" && S.phase === "run" ? PX.Input.sel() : null, rd = ctl && ui.aids.readings ? readings(S, ctl) : "";
-    set(el.querySelector(".h-ctl"), "ctl", `${ctl}|${!!ui.aids.direct}|${rd}`, (e) => {
+    set(el.querySelector(".h-ctl"), "ctl", `${ctl}|${rd}`, (e) => {
       if (!ctl) { e.hidden = true; return; }
       e.hidden = false;
-      e.innerHTML = `${rd}<b>${esc(PX.Cab.NAMES[ctl])}</b>${rd ? setting(S, ctl) : ""} <span>${CTL[ctl]}</span>${ui.aids.direct ? ` <span class="dk">${DIRECT[ctl].split(" ").map(k => `<kbd>${k}</kbd>`).join("")}</span>` : ""}`;
+      e.innerHTML = `${rd}<b>${esc(PX.Cab.NAMES[ctl])}</b>${rd ? setting(S, ctl) : ""} <span>${CTL[ctl]}</span> <span class="dk">${DIRECT[ctl].split(" ").map(k => `<kbd>${k}</kbd>`).join("")}</span>`;
     });
     set(el.querySelector(".h-fast"), "fast", !!ui.fast, (e, v) => { e.hidden = !v; });
     const ms = el.querySelector(".h-mapside");
