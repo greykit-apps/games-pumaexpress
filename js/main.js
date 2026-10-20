@@ -1,33 +1,45 @@
 /* The Puma Express -- boot, title, the loop, and everything between.
  *
- * The greykit.games boot (the canon @gk-title block, STANDARD.md §3) while
- * the art is drawn, then the block's default title in the engine's green and
- * brass: the train running through the night behind the name and the menu
- * (§6's items and keys), the credit. A new night opens on the Resistance's
- * orders, then the yard at Velmont. The engine runs at fifty
+ * The greykit.games integrated intro (games-meta STANDARD.md §14, the shared
+ * gk-intro.js over the canon @gk-title boot): the boot while the art is
+ * drawn, a press to let the sound in where the browser wants one, then the
+ * block's default title in the engine's green and brass: the train running
+ * through the night behind the name and the menu (§6's items and keys), the
+ * credit under it, the Sound and Music switches. A new night opens on the
+ * Resistance's orders, then the yard at Velmont. The engine runs at fifty
  * steps a second (or forty, or sixty: Settings), whatever the screen's rate;
  * Duc says what he sees, and the engine is heard. */
 "use strict";
 (() => {
-  const E = PX.Engine, C = PX.C, L = PX.Line, K = PX.K, UI = PX.UI, R = PX.Render, HUD = PX.HUD, SFX = PX.SFX, I = PX.Input, esc = PX.esc, $ = id => document.getElementById(id);
+  const E = PX.Engine, C = PX.C, L = PX.Line, K = PX.K, UI = PX.UI, R = PX.Render, HUD = PX.HUD, SFX = PX.SFX, I = PX.Input, $ = id => document.getElementById(id);
   const game = PX.game = { mode: "boot", S: null, ui: { mapView: false, aids: {}, cursor: null, fast: false }, step: 20, acc: 0, last: 0, warned: 0, teach: null, said: {} };
 
-  /* ---- sound on and off (STANDARD.md §8) ---- */
-  const readMuted = () => { try { return globalThis.localStorage.getItem(PX.KEY_MUTED) === "1"; } catch (e) { return false; } };
-  SFX.muted = readMuted();
+  /* ---- sound on and off (STANDARD.md §8), and the music on its own (§14) ---- */
+  const readFlag = (k, d) => { try { const v = globalThis.localStorage.getItem(k); return v === null ? d : v === "1"; } catch (e) { return d; } };
+  const writeFlag = (k, on) => { try { globalThis.localStorage.setItem(k, on ? "1" : "0"); } catch (e) { /* no storage */ } };
+  SFX.muted = readFlag(PX.KEY_MUTED, false);
+  SFX.musicOn = readFlag(PX.KEY_MUSIC, true);
   game.toggleMute = () => {
     SFX.unlock();
     SFX.setMuted(!SFX.muted);
-    try { globalThis.localStorage.setItem("pumaexpress_muted_v1", SFX.muted ? "1" : "0"); } catch (e) { /* no storage */ }
+    writeFlag(PX.KEY_MUTED, SFX.muted);
     syncSound();
     if (!SFX.muted) { SFX.play("menu"); titleTune(); }
     if (game.mode === "play") HUD.toast(SFX.muted ? "Sound off" : "Sound on", "", 1200);
   };
-  function syncSound() { const b = $("snd"); if (b) { b.setAttribute("aria-pressed", String(!SFX.muted)); b.classList.toggle("muted", SFX.muted); } }
+  game.setMusic = on => {
+    SFX.unlock();
+    SFX.setMusic(on);
+    writeFlag(PX.KEY_MUSIC, on);
+    syncSound();
+    if (on) titleTune();
+  };
+  /* the header's Sound, and the title's switches */
+  function syncSound() { const b = $("snd"); if (b) { b.setAttribute("aria-pressed", String(!SFX.muted)); b.classList.toggle("muted", SFX.muted); } if (game.sw) game.sw.refresh(); }
   const SMALL = matchMedia("(max-width: 759px), (max-height: 479px)");
-  /* the title tune runs from the boot's first line, so the title fades in on music already playing.
-     The browser holds a page's sound until its first key or click: the tune waits at its first bar
-     until then, and wake() lets it go */
+  /* the tune, its long whistle first, is the boot's sound: where the browser already lets the page play (a launch
+     from the arcade), it starts with the boot, so the title fades in on music already playing; where it does not,
+     the boot holds for a press, and the whistle goes off with it. wake() lets it go on any first key or click */
   const titleTune = () => { if ((game.mode === "boot" || game.mode === "title") && !SFX.tune && !SMALL.matches) SFX.startTune(); };
   const wake = () => { SFX.unlock(); titleTune(); };
 
@@ -55,7 +67,6 @@
     };
   }
   function openTitle() {
-    if (game.intro) game.intro.cancel();
     game.mode = "title";
     const el = $("title");
     el.innerHTML = titleHTML(titleCfg());
@@ -79,42 +90,23 @@
     const b = t.querySelector(".gk-primary") || t.querySelector(".gk-menu button");
     if (b) b.focus({ preventScroll: true });
   }
-  /* the opening, the first time the title shows: the train alone, then the name fading in a word at a time
-     (each word WORDS seconds after the first, "The Puma" close together), a hold, then the menu. A key or a
-     click skips to the end of it */
-  const INTRO = { name: 1500, menu: 5800, done: 7000 }, WORDS = [0, 0.4, 1.4];
-  /* hidden from the moment it is built, behind the boot; the returned start runs it once the boot is done */
-  function introTitle() {
-    const t = document.querySelector("#title .gk-title");
-    if (!t || matchMedia("(prefers-reduced-motion: reduce)").matches) return () => showTitle();
-    const later = t.querySelectorAll(".gk-menu, footer");
-    /* each word in a span of its own, with its turn */
-    let w = 0;
-    for (const line of t.querySelectorAll("h1 span[data-t]")) line.innerHTML = line.dataset.t.split(" ").map(x => `<span class="pe-w" style="--w:${WORDS[Math.min(w++, WORDS.length - 1)]}s">${esc(x)}</span>`).join(" ");
-    for (const n of later) n.inert = true;
-    t.classList.add("pe-intro");
-    const timers = [];
-    const menu = () => {
-      game.intro = null;
-      for (const n of later) n.inert = false;
-      t.classList.add("pe-name", "pe-menu", "gk-rise");
-      showTitle(false);
-      timers.push(setTimeout(() => t.classList.remove("pe-intro", "pe-name", "pe-menu"), INTRO.done - INTRO.menu));
-    };
-    const start = () => { if (game.intro === intro) timers.push(setTimeout(() => t.classList.add("pe-name"), INTRO.name), setTimeout(menu, INTRO.menu)); };
-    const intro = game.intro = {
-      cancel() { timers.forEach(clearTimeout); game.intro = null; },
-      skip() { this.cancel(); game.skippedAt = performance.now(); for (const n of later) n.inert = false; t.classList.remove("pe-intro", "pe-name", "pe-menu"); showTitle(false); },
-    };
-    return start;
-  }
-  game.refreshTitle = () => { if (game.mode !== "title") return; openTitle(); showTitle(false); };
+  /* the opening, the first time the title shows (gk-intro's finish): the train alone, then the name fading in a
+     word at a time, a hold, then the menu. The words all start at INTRO.name and css/pumaexpress.css staggers
+     them, "The Puma" close together and "Express" a second on. A key or a click skips to the end of it */
+  const INTRO = { name: 1500, step: 0, menu: 4400, done: 5600 };
+  /* the integrated title (§14): the credit under the menu, the switches top right, a tick on every row the
+     pointer or the arrows reach. finish() does it the first time; each later mount of the title does it again */
+  const toggles = { sound: { get: () => !SFX.muted, set: on => { if (on === SFX.muted) game.toggleMute(); } },
+    music: { get: () => SFX.musicOn, set: on => game.setMusic(on) } };
+  const tick = () => gkTick(SFX.ctx, SFX.comp);
+  function integrate() { const t = document.querySelector("#title .gk-title"); if (t) game.sw = gkIntegrate(t, { toggles, tick }); }
+  game.refreshTitle = () => { if (game.mode !== "title") return; openTitle(); integrate(); showTitle(false); };
   game.toTitle = () => {
     UI.close(true);
     game.S = null; game.ui.mapView = false;
     SFX.stopLoops();
     I.clear(); HUD.clear(); PX.FX.clear();
-    openTitle(); showTitle();
+    openTitle(); integrate(); showTitle();
     if (!SMALL.matches) SFX.startTune();
   };
   function titleAct(a) {
@@ -382,7 +374,6 @@
   /* ---- keys ---- */
   document.addEventListener("keydown", ev => {
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-    if (game.intro) { ev.preventDefault(); game.intro.skip(); return; }
     if (UI.sheet) { UI.key(ev); return; }
     const k = ev.key.length === 1 ? ev.key.toLowerCase() : ev.key;
     if (k === "m" && !(ev.target.closest && ev.target.closest("input"))) { ev.preventDefault(); game.toggleMute(); return; }
@@ -408,7 +399,10 @@
   addEventListener("blur", () => { I.clear(); if (game.mode === "play") game.pause(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) { checkpoint(); if (game.mode === "play") game.pause(); } });
   addEventListener("pagehide", () => checkpoint());
-  document.addEventListener("pointerdown", () => { wake(); if (game.intro) game.intro.skip(); }, true);
+  document.addEventListener("pointerdown", wake, true);
+  /* a click that skips the opening is spent on it (gk-intro keeps it from the page); ahead of gk-intro's own
+     listener, note when it came, so the click it makes cannot land on a row that was not there when it was pressed */
+  addEventListener("pointerdown", () => { if (game.entering) game.skippedAt = performance.now(); }, true);
   document.addEventListener("pointerover", ev => {
     if (ev.pointerType !== "mouse") return;
     const b = ev.target.closest && ev.target.closest("button:not(:disabled), summary");
@@ -461,8 +455,13 @@
     injectTitleCSS();     /* the boot's and the title's; the title's colours and the sheets are css/pumaexpress.css */
     fit();
     const q = new URLSearchParams(location.search);
-    if (!q.has("play") && !q.has("shot")) wake();
-    const run = SMALL.matches || q.has("play") ? { finish: async () => {}, cancel() {} } : runBoot({ lines: [bootReloadLine(), "raising steam at Velmont"] });
+    const lines = [bootReloadLine(), "raising steam at Velmont"];
+    /* the integrated intro, but not on a small screen (the page asks for a desktop), a debug night (?play), or a
+       picture of the title or a sheet (?shot, ?sheet): those keep the plain boot */
+    const plain = SMALL.matches || q.has("play") || q.has("shot") || q.has("sheet");
+    const intro = plain ? null : startIntro({ lines, audio: () => { SFX.unlock(); return SFX.ctx; }, bootSound: () => titleTune() });
+    if (plain && !q.has("play") && !q.has("shot")) wake();
+    const run = intro ? null : SMALL.matches || q.has("play") ? { finish: async () => {}, cancel() {} } : runBoot({ lines });
     setTimeout(() => {
       PX.People.ducFace(); PX.People.paw();
       R.init($("screen"));
@@ -483,13 +482,22 @@
         if (q.has("end")) { const ev = []; if (q.get("end") === "won") E.win(S, ev); else E.end(S, q.get("end"), ev); events(S, ev); }
       } else {
         openTitle();
-        const opening = q.has("shot") || q.has("sheet") ? () => showTitle(false) : introTitle();
         const saved = PX.loadGame(), best = PX.scores()[0];
-        run.finish(["the art is loaded", saved ? "a night in progress" : best ? `best: ${best.score.toLocaleString("en-US")}` : "steam up"]).then(() => {
-          opening();
-          const sheet = q.get("sheet");
-          if (sheet && UI[sheet]) UI[sheet]();
-        });
+        const more = ["the art is loaded", saved ? "a night in progress" : best ? `best: ${best.score.toLocaleString("en-US")}` : "steam up"];
+        /* debug: &hold=always holds for the press even where the browser would play sound already (the in-app
+           browser, a launch from the arcade) */
+        if (intro) {
+          game.entering = true;
+          intro.finish({ more, name: "words", timing: INTRO, hold: q.get("hold") === "always" ? "always" : "auto", toggles, tick,
+            onContinue: wake, onTitle: titleTune, onDone: () => { game.entering = false; } }).then(r => { game.sw = r.toggles; });
+        } else {
+          integrate();
+          run.finish(more).then(() => {
+            showTitle(false);
+            const sheet = q.get("sheet");
+            if (sheet && UI[sheet]) UI[sheet]();
+          });
+        }
       }
       game.last = performance.now();
       requestAnimationFrame(frame);

@@ -333,7 +333,8 @@
         <table class="aids">${line("Scanlines", "Fine dark lines over the picture, like an old television.", toggle("scan", PX.prefs.scanlines, "Scanlines"))}
         ${line("Screen shake", "The screen jolts with hits and explosions." + (PX.calm() ? " Off to begin with, as this computer asks for less motion." : ""), toggle("shake", PX.prefs.shake, "Screen shake"))}</table>
         <h3>Sound</h3>
-        <table class="aids">${line("Sound", "The engine, the whistle, the guns and the cannon; the tune on the title. <kbd>M</kbd> switches it anywhere.", toggle("mute", !PX.SFX.muted, "Sound"))}</table>
+        <table class="aids">${line("Sound", "The engine, the whistle, the guns and the cannon; the tune on the title. <kbd>M</kbd> switches it anywhere.", toggle("mute", !PX.SFX.muted, "Sound"))}
+        ${line("Music", "The tune on the title. Off, the engine and the guns still sound." + (PX.SFX.muted ? " Silent while Sound is off." : ""), toggle("music", PX.SFX.musicOn, "Music"))}</table>
         <h3>Game speed</h3>
         <div class="row">${Object.entries(PX.SPEEDS).map(([k, [n]]) => pill(PX.prefs.speed === k, n, "speed:" + k)).join("")}</div>
         <p class="note">Relaxed slows the whole game down, the night's clock with it; Brisk speeds it up. Nothing else changes.</p>
@@ -354,6 +355,7 @@
         else if (k === "shake") { PX.prefs.shake = !PX.prefs.shake; PX.savePrefs(); }
         else if (k === "resume") { PX.prefs.resume = !PX.prefs.resume; PX.savePrefs(); }
         else if (k === "mute") PX.game.toggleMute();
+        else if (k === "music") PX.game.setMusic(!PX.SFX.musicOn);
         else if (k === "speed") { PX.prefs.speed = a; PX.savePrefs(); PX.game.applySpeed(); }
         PX.game.syncAids();
         api.refresh();

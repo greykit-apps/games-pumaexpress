@@ -6,6 +6,7 @@
 (() => {
   const KEY_PREFS = "pumaexpress_prefs_v1", KEY_SCORES = "pumaexpress_scores_v1", KEY_GAME = "pumaexpress_game_v1", KEY_NAME = "pumaexpress_name_v1";
   PX.KEY_MUTED = "pumaexpress_muted_v1";
+  PX.KEY_MUSIC = "pumaexpress_music_v1";
   PX.KEY_DIFF = "pumaexpress_diff_v1";
 
   /* ---- the aids: Classic is 1987, Field is a modern helping hand ---- */
