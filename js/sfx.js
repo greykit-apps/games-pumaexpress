@@ -6,10 +6,14 @@
  * roar when they blow; the whistle, a three-note steam chord. Fighters drone
  * and dive, the guns hammer, the cannon thumps, the river throws up water.
  * On the title, a tune of our own (the 1987 game's was Paul Butler's): an
- * accordion over a walking bass and the train's own rhythm, in D minor. */
+ * accordion over a walking bass and the train's own rhythm, in D minor.
+ *
+ * Two switches (games-meta STANDARD.md §8, §14): Sound is the master, A.out,
+ * and silences everything; Music is the tune alone, on its own bus under it,
+ * so the engine and the guns play on without it. */
 "use strict";
 (() => {
-  const A = PX.SFX = { ctx: null, muted: false, out: null, loops: {}, tune: null };
+  const A = PX.SFX = { ctx: null, muted: false, musicOn: true, out: null, music: null, loops: {}, tune: null };
   let noiseBuf = null;
 
   A.unlock = () => {
@@ -18,10 +22,13 @@
     const a = A.ctx;
     A.out = a.createGain(); A.out.gain.value = A.muted ? 0 : 0.5; A.out.connect(a.destination);
     A.comp = a.createDynamicsCompressor(); A.comp.threshold.value = -16; A.comp.ratio.value = 4; A.comp.connect(A.out);
+    A.music = a.createGain(); A.music.gain.value = A.musicOn ? 1 : 0; A.music.connect(A.comp);
     noiseBuf = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   };
+  /* the music alone: the tune stops with it, and starts again from its whistle when it comes back on */
+  A.setMusic = on => { A.musicOn = on; if (A.music) A.music.gain.setTargetAtTime(on ? 1 : 0, A.ctx.currentTime, 0.05); if (!on) A.stopTune(); };
   A.setMuted = m => { A.muted = m; if (A.out) A.out.gain.value = m ? 0 : 0.5; if (m) { A.stopTune(); for (const k of Object.keys(A.loops)) A.loop(k, 0); } };
 
   function tone(f0, f1, ms, type, vol, dest, at = 0) {
@@ -164,9 +171,9 @@
   EV[N - 16].push(["w"]);
 
   A.startTune = () => {
-    if (A.muted || !A.ctx || A.tune) return;
+    if (A.muted || !A.musicOn || !A.ctx || A.tune) return;
     const a = A.ctx, g = a.createGain();
-    g.gain.value = 0.5; g.connect(A.comp);
+    g.gain.value = 0.5; g.connect(A.music);
     const room = a.createDelay(1), fb = a.createGain(), wet = a.createGain();
     room.delayTime.value = STEP * 3; fb.gain.value = 0.22; wet.gain.value = 0.18;
     room.connect(fb); fb.connect(room); room.connect(wet); wet.connect(g);

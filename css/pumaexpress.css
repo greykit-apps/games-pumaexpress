@@ -181,14 +181,12 @@ img.glyph { display: block; }
 #title .gk-title > .scene { background: #070b1c; }
 /* the canon marks the focused row with its wash and pointer; the page's own focus ring for buttons stays off it */
 #title .gk-menu button:focus { box-shadow: none; }
-/* the opening (main.js): the train alone, then the name fading in a word at a time (main.js's WORDS), then the
-   menu; a key or a click skips it. The words are spans inside the canon's lines, so they take back the line's
-   flow and colour */
-#title h1 .pe-w { display: inline; color: inherit; }
-#title .pe-intro > .gk-shade, #title .pe-intro .pe-w, #title .pe-intro .gk-menu, #title .pe-intro > footer { opacity: 0; }
-#title .pe-intro.pe-name .pe-w { opacity: 1; transition: opacity 1.6s ease-in-out var(--w); }
-/* the shade down the left waits for the menu, and comes up with it */
-#title .pe-intro.pe-menu > .gk-shade, #title .pe-intro.pe-menu .gk-menu, #title .pe-intro.pe-menu > footer { opacity: 1; transition: opacity 1s ease-out; }
+/* the opening (gk-intro.js, "words"): the train alone, then the name a word at a time, then the menu. gk-intro
+   lights every word at once (main.js's INTRO, step 0); the stagger is here, "The Puma" close together and
+   "Express" a second on, each word slower to come up than gk-intro's own */
+#title .gk-title.gki-intro h1 .gki-w.gki-on { transition: opacity 1.6s ease-in-out var(--w, 0s); }
+#title h1 > span:first-child .gki-w + .gki-w { --w: .4s; }
+#title h1 > span + span .gki-w { --w: 1.4s; }
 .pe-scene { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 /* ---- new game, the station report, the end ---- */

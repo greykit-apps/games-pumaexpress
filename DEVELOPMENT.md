@@ -19,6 +19,7 @@ What the game is meant to be is in [PRODUCT.md](PRODUCT.md), and how it looks in
 | `css/pumaexpress.css` | the page, the HUD (flat dark panels over the scene), and the screens with words on them (dim lamplit paper and brass) |
 | `fonts/` | Barlow Semi Condensed and Pixelify Sans (SIL Open Font License; the licences are beside them) |
 | `js/gk-title.js` | the greykit.games boot and default title, `@gk-title` v0.4 taken whole from games-meta `canon/` (§3); `js/main.js` gives it the menu and the train behind it, and `css/pumaexpress.css` its green and brass |
+| `js/gk-intro.js` | the integrated intro, `@gk-intro` v0.1 taken whole from games-meta `canon/` (§14): the boot's hold for a press where the browser wants one, the title's entrance, the credit under the menu, the Sound and Music switches, the menu's ticks. `js/main.js` drives it; the tune, its whistle first, is the boot's sound |
 | `js/util.js`, `js/engine/*.js` | the game itself, with no DOM in it and no clock or `Math.random`: every number (`const.js`), the line (`route.js`), the engine and its fire (`loco.js`), the three fights (`fights.js`), the night step by step (`world.js`) |
 | `js/engine/bot.js` | a driver who never tires: runs the train behind the title, and drives every night in the tests |
 | `js/art/kit.js` | what every picture shares: the canvas size, the material ramps, the dither, the night light, the pixel faces |
@@ -68,7 +69,7 @@ index.html?play=<0-2>&seed=<n>
 - `pause=1` opens on the pause menu.
 - `end=won`, `dawn`, `burst`, `boiler`, `motion`, `cut`, `derail`, `buffer`, `barricade`, `span` or `frontier` ends the night at once, to see its scene and the end sheet beside it (pair `dawn` with `t=1925` for its daylight).
 
-Without `play`, `sheet=<name>` opens a title sheet after the boot (`help`, `settings`, `about`, `scores`), and `shot=1` reveals the title without its print-in.
+Without `play`, `sheet=<name>` opens a title sheet after the boot (`help`, `settings`, `about`, `scores`), and `shot=1` reveals the title without its print-in. Both keep the plain boot, with no hold. `hold=always` makes the boot hold for a press even where the browser would already play sound, as the in-app preview browser and a launch from greykit.com/arcade do.
 
 ## Deploy
 
@@ -76,7 +77,7 @@ Merge requests run the `validate` job only. On `main`, `deploy` follows it and r
 
 ## Saves
 
-Everything is in `localStorage` under keys beginning `pumaexpress_`, versioned with a `_v1` suffix: the settings, the high scores, a night in progress, the last name on the table, the last difficulty, and sound. They are defined at the top of `js/store.js`. Settings → *Forget everything* clears exactly those keys, as games-meta STANDARD.md requires.
+Everything is in `localStorage` under keys beginning `pumaexpress_`, versioned with a `_v1` suffix: the settings, the high scores, a night in progress, the last name on the table, the last difficulty, sound, and music. They are defined at the top of `js/store.js`. Settings → *Forget everything* clears exactly those keys, as games-meta STANDARD.md requires.
 
 ## Reference disks
 
