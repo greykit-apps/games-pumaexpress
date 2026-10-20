@@ -93,7 +93,7 @@
   /* the opening, the first time the title shows (gk-intro's finish): the train alone, then the name fading in a
      word at a time, a hold, then the menu. The words all start at INTRO.name and css/pumaexpress.css staggers
      them, "The Puma" close together and "Express" a second on. A key or a click skips to the end of it */
-  const INTRO = { name: 1500, step: 0, menu: 5800, done: 7000 };
+  const INTRO = { name: 1500, step: 0, menu: 4400, done: 5600 };
   /* the integrated title (§14): the credit under the menu, the switches top right, a tick on every row the
      pointer or the arrows reach. finish() does it the first time; each later mount of the title does it again */
   const toggles = { sound: { get: () => !SFX.muted, set: on => { if (on === SFX.muted) game.toggleMute(); } },
