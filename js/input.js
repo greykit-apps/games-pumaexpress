@@ -127,7 +127,11 @@
     addEventListener("pointerup", () => { I.mouse.down = false; });
   };
 
-  /* ---- gamepads: the stick or the pad aims and moves the paw; A uses or fires; B whistles; bumpers change the view ---- */
+  /* ---- gamepads: the stick or the pad aims and moves the paw; A uses or fires; B whistles; bumpers change the view.
+     Off the play screen the menus have the pad (js/gk-pad.js); a button still down from there, the A that pressed
+     Go, is spent: it does nothing here until it has been let go ---- */
+  I.padSpent = new Set();
+  I.spendPad = () => { I.padSpent = null; };
   I.pollPad = () => {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     const now = new Set();
@@ -146,6 +150,8 @@
       if (b(8)) now.add("map");
       if (b(9)) now.add("pause");
     }
+    if (!I.padSpent) I.padSpent = new Set(now);
+    for (const a of [...I.padSpent]) if (now.has(a)) now.delete(a); else I.padSpent.delete(a);
     I.stick = Math.hypot(sx, sy) > 0.25 ? { x: sx, y: sy } : null;
     const fresh = [...now].filter(a => !I.padPrev.has(a));
     for (const a of fresh) { I.device = "pad"; I.pressed.add(a); }

@@ -390,7 +390,7 @@
       <tr><td>Pause</td><td><kbd>Esc</kbd> or <kbd>P</kbd></td></tr>
       <tr><td>Aids</td><td><kbd>L</kbd> Classic or Field</td></tr>
       <tr><td>Sound</td><td><kbd>M</kbd></td></tr></table>
-      <p class="note">Gamepad: the stick or pad picks, works and aims; A uses and fires; B whistles; the bumpers change view; Back is the map, Start pauses.</p>`],
+      <p class="note">Gamepad: the stick or pad picks, works and aims; A uses and fires; B whistles; the bumpers change view; Back is the map, Start pauses. In the menus, the stick or pad moves, A presses, B goes back, and Start closes a sheet.</p>`],
   ];
   UI.help = (tab = 0, after) => UI.open("Help", { wide: true, tab, tabs: UI.helpTabs(), onClose: after });
   UI.aboutHTML = () => `<p>Steal a train full of looted art and run it across occupied territory. Coordinate with the Resistance and fight your way to the coast before dawn.</p>

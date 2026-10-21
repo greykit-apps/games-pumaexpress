@@ -1,7 +1,7 @@
 /* The Puma Express -- boot, title, the loop, and everything between.
  *
  * The greykit.games integrated intro (games-meta STANDARD.md §14, the shared
- * gk-intro.js over the canon @gk-title boot): the boot while the art is
+ * gk-intro.js over the canon @gk-title boot), the menus by pad (§16, gk-pad.js): the boot while the art is
  * drawn, a press to let the sound in where the browser wants one, then the
  * block's default title in the engine's green and brass: the train running
  * through the night behind the name and the menu (§6's items and keys), the
@@ -139,7 +139,7 @@
     $("title").hidden = true; $("title").innerHTML = "";
     document.body.classList.remove("on-title");
     $("game").hidden = false;
-    I.clear(); HUD.clear(); PX.FX.clear();
+    I.clear(); I.spendPad(); HUD.clear(); PX.FX.clear();
     game.syncAids(); fit();
     R.init($("screen"));
     game.acc = 0; game.odoAt = S.odo; game.chuff = 0; game.clack = 0;
@@ -163,7 +163,7 @@
   };
   /* not once the night is over: its end is showing, and the sheet after it is on its way */
   game.pause = () => { if (game.mode !== "play" || UI.sheet || PX.Ending.has(game.S)) return; I.clear(); checkpoint(); UI.pause(); };
-  game.unpause = () => { game.acc = 0; game.last = performance.now(); };
+  game.unpause = () => { game.acc = 0; game.last = performance.now(); I.spendPad(); };
   game.leave = () => { checkpoint(true); game.toTitle(); };
   game.abandon = () => { const S = game.S; if (!S) return; E.abandon(S); PX.clearGame(); finish(); };
   game.depart = msg => {
@@ -393,6 +393,9 @@
     }
     I.down(ev);
   });
+  /* the pad in the menus (games-meta STANDARD.md §16): the title, the sheets and the questions, by the same keys a
+     keyboard presses. In play the night reads the pad itself (I.pollPad), the pause and every other sheet aside */
+  gkPad({ claimed: () => game.mode === "play" && !UI.sheet });
   /* on the window, ahead of the boot, which keeps the key that skips it from the document */
   addEventListener("keydown", wake, true);
   document.addEventListener("keyup", ev => I.up(ev));
